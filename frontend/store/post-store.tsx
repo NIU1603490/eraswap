@@ -111,4 +111,8 @@ export const usePostStore = create<PostState>((set,get)=> ({
         
     },
 
+    isLikedByUser: async (id, userId) => {
+
+    }
+
 }))

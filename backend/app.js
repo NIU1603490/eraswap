@@ -5,6 +5,7 @@ const locationRoutes = require('./routes/locationRoutes.js');
 const productRoutes = require('./routes/productRoutes.js');
 const transactionRoutes = require('./routes/transactionRoutes.js');
 const postRoutes = require('./routes/postRoutes.js');
+const followRoutes = require('./routes/followRoutes.js');
 
 
 const app = express();
@@ -19,7 +20,7 @@ app.use('/api/locations', locationRoutes); // Location routes
 app.use('/api/users', userRoutes); // User routes
 app.use('/api/products', productRoutes); // Product routes
 app.use('/api/transactions', transactionRoutes); // Transaction routes
-// app.use('/api/follows', followRoutes);
+app.use('/api/follows', followRoutes);
 app.use('/api/posts', postRoutes); 
 
 

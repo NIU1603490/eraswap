@@ -1,11 +1,12 @@
-const Follow = require('../models/followModel');
-const User = require('../models/userModel');
+const Follow = require('../models/follow');
+const User = require('../models/user');
 
 const followUser = async (req, res) => {
+    console.log('FOLLOW')
     try {
-        const followerId = req.user._id; //  user who want to follow
+        const { followerId } = req.body; //  user who wants to follow
         const followingId = req.params.id; // ID of the user to be followed
-
+        consolr.log('This:', followerId, 'want to follow:', followingId)
         // Check if the follower and following are the same
         if (followerId.toString() === followingId) {
             return res.status(400).json({ 
@@ -58,7 +59,7 @@ const followUser = async (req, res) => {
 
 const unfollowUser = async (req, res) => {
     try {
-        const followerId = req.user._id; // user who want to unfollow
+        const { followerId } = req.body; // user who want to unfollow
         const followingId = req.params.id; // ID of the user to be unfollowed
 
         // Check if the follower and following are the same

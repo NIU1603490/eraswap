@@ -91,7 +91,11 @@ const getUser = async (req, res) => {
         if (!userId) {
             return res.status(400).json({ success: false, message: 'UserId is required' });
         }
-        const user = await User.findById(userId);
+        const user = await User.findById(userId)
+        .populate('country', 'name')
+        .populate('city', 'name')
+        .populate('university', 'name')
+
         res.status(200).json({
             success: true,
             user,

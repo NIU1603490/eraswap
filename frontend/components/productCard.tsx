@@ -6,15 +6,17 @@ import { Heart } from "lucide-react-native";
 import { useProductStore } from '../store/product-store';
 import { useUserStore } from '../store/user-store';
 import { useUser } from '@clerk/clerk-expo';
+import { useRouter } from 'expo-router';
 
 
 const ProductCard = ({ item, onPress }: { item: Product; onPress: () => void }) => {
   const { user } = useUser();
   const clerkUserId = user?.id || '';
+  const router = useRouter();
 
-  console.log('Product Card - User ID:', clerkUserId);
-  const { addFavorite, removeFavorite, isFavorite} = useUserStore();
-  console.log('Favorite', isFavorite(item._id));
+  // console.log('Product Card - User ID:', clerkUserId);
+  const { fetchObjectUser, addFavorite, removeFavorite, isFavorite} = useUserStore();
+  // console.log('Favorite', isFavorite(item._id));
   
   const handleToggleFavorite = async () => {
     try {
@@ -32,7 +34,8 @@ const ProductCard = ({ item, onPress }: { item: Product; onPress: () => void }) 
   }
 
   return (
-    <TouchableOpacity style={styles.productCard} onPress={onPress}>
+    <View style={styles.productCard}>
+    <TouchableOpacity  onPress={onPress}>
       <View style={styles.productImageContainer}>
       <Image 
       source={{ uri: item.images[0] || 'https://via.placeholder.com/150' }}
@@ -60,6 +63,7 @@ const ProductCard = ({ item, onPress }: { item: Product; onPress: () => void }) 
     <Text style={styles.productPrice}>{item.price.amount} {item.price.currency}</Text>
     </View>
   </TouchableOpacity>
+  </View>
   )
 }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as ImagePicker from 'expo-image-picker';
@@ -76,7 +77,7 @@ export default function ModifyPost() {
   if (!fontsLoaded) return null;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
       <Text style={styles.sellText}>Edit Post</Text>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
@@ -119,7 +120,7 @@ export default function ModifyPost() {
             
         </View>
       
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -127,59 +128,68 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     backgroundColor: '#fff',
-    padding: 15,
-    marginTop: 50,
-},
-header: {
+    },
+    header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
-    padding: 10,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     backgroundColor: '#fff',
-},
-  headerButton: { padding: 8 },
-  cancelButton: { 
-    fontSize: 14,
+    },
+    cancelButton: { 
+    fontSize: 16,
     color: 'red',
     fontFamily: 'PlusJakartaSans-Bold'
-},
-sellText: {
+    },
+    sellText: {
     fontSize: 20,
     fontFamily: 'PlusJakartaSans-Bold',
     color: '#000',
-},
-buttonPublish: { 
+    },
+    buttonPublish: { 
     fontSize: 14,
     backgroundColor: '#007AFF',
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
-},
-buttonDelete: {
+    },
+    buttonDelete: {
     fontSize: 14,
     borderRadius: 16,
     borderColor: 'red',
     borderWidth: 1,
     paddingVertical: 16,
     alignItems: 'center',
-},
-buttonText: {
+    },
+    buttonText: {
     color: 'white',
     fontSize: 16,
     fontFamily: 'PlusJakartaSans-Bold',
-},
-buttonContainer: {
+    },
+    buttonContainer: {
     padding: 15,
     gap: 15,
-  },
-  containerPost: { marginTop: 15, gap: 15 },
-  postText: { fontFamily: 'PlusJakartaSans-Regular', minHeight: 200, borderWidth: 1, borderColor: '#ddd', borderRadius: 12, padding: 12, textAlignVertical: 'top' },
-  imageContainer: { position: 'relative', width: '100%', height: 250, borderRadius: 12, overflow: 'hidden' },
-  image: { width: '100%', height: '100%', resizeMode: 'cover' },
-  removeImageButton: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 16, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  addImageButton: { flexDirection: 'row', alignItems: 'center', padding: 10 },
-  addImageText: { fontSize: 14, color: '#007AFF', marginLeft: 10, fontFamily: 'PlusJakartaSans-Regular' },
+    },
+    containerPost: {
+    margin: 20, 
+    gap: 15
+    },
+    postText: { 
+        fontFamily: 'PlusJakartaSans-Regular',
+        minHeight: 200,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 12,
+        padding: 12,
+        textAlignVertical: 'top',
+        backgroundColor: '#FAFAFA',
+     },
+    imageContainer: { position: 'relative', width: '100%', height: 250, borderRadius: 12, overflow: 'hidden' },
+    image: { width: '100%', height: '100%', resizeMode: 'cover' },
+    removeImageButton: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 16, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+    addImageButton: { flexDirection: 'row', alignItems: 'center', padding: 10 },
+    addImageText: { fontSize: 14, color: '#007AFF', marginLeft: 10, fontFamily: 'PlusJakartaSans-Regular' },
 });

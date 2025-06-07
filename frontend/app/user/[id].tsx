@@ -1,6 +1,6 @@
 import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, Image, FlatList } from 'react-native'
 import React, { useState, useEffect } from 'react'
-import { Link, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth, useUser} from '@clerk/clerk-expo';
 import { useFonts } from "expo-font";
 import { Ionicons } from '@expo/vector-icons';
@@ -14,18 +14,20 @@ import { useProductStore } from '@/store/product-store';
 import { usePostStore } from '@/store/post-store';
 import { useFollowStore } from '@/store/follow-store';
 
-export default function Profile() {
-  
+
+export default function OtherProfile() {
+  const { id } = useLocalSearchParams() as { id: string };
   const { user } = useUser();
-  const { isSignedIn, isLoaded } = useAuth();
-  const { fetchUser } = useUserStore();
+  const { isLoaded } = useAuth();
+  const { fetchObjectUser,fetchUser, selectedUser } = useUserStore();
   const { fetchProductsByClerkId, userProducts} = useProductStore();
   const { fetchPostsByClerkId, userPosts } = usePostStore();
-  const { followers, following, fetchFollowers, fetchFollowing } = useFollowStore();
+  const { followers, following, fetchFollowers, fetchFollowing, followUser, unfollowUser } = useFollowStore();
   const router = useRouter();
 
   const [userData, setUserData] = useState<User | null>(null);
   const [selectedTab, setSelectedTab] = useState('Products');
+  const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -36,34 +38,56 @@ export default function Profile() {
 
 
   useEffect(() => {
-    const loadUserData = async () => {
+    const loadData = async () => {
       if (!user?.id || !isLoaded) {
         setLoading(false);
         return;
       }
       try {
-        // console.log('Fetching user data for ID:', user.id);
-        const userResponse = await fetchUser(user.id);
-        // console.log('User data:', userResponse);
+        console.log(user?.id);
+        const userResponse = await fetchObjectUser(id);
         setUserData(userResponse);
-
         // console.log('Fetching products for user ID:', user.id);
         const productResponse = await fetchProductsByClerkId(user.id);
-        // console.log('Product data:', productResponse);
-
-        await fetchPostsByClerkId(user.id);
-        await fetchFollowers(user.id);
-        await fetchFollowing(user.id);
+        await fetchPostsByClerkId(userResponse.clerkUserId);
+        await fetchFollowers(userResponse.clerkUserId);
+        await fetchFollowing(userResponse.clerkUserId);
 
       } catch (err: any) {
         setError(err.message || 'Error al cargar los datos del usuario');
-        Toast.show({ type: 'error', text1: err.message });
       } finally {
         setLoading(false);
       }
     };
-    loadUserData();
-  }, [user?.id, isLoaded]);
+    loadData();
+  }, [id, isLoaded]);
+
+  useEffect(() => {
+    if (user?.id) {
+      setIsFollowing(followers.some(f => f._id === user?.id));
+    }
+  }, [followers, user?.id]);
+
+  const handleFollowToggle = async () => {
+    // console.log(user?.id)
+    // console.log(id)
+    if(!user?.id){
+      return
+    }
+    console.log('FOLLOW FUNCTION')
+    try {
+      if (isFollowing) {
+        await unfollowUser(id, user?.id);
+      } else {
+        console.log('FOLLOW', userData?.clerkUserId);
+        const responseFollow = await followUser(id, user?.id);
+        console.log(responseFollow);
+      }
+      await Promise.all([fetchFollowers(id as string), fetchFollowing(id as string)]);
+    } catch (err: any) {
+      Toast.show({ type: 'error', text1: err.message });
+    }
+  };
 
 
   return (
@@ -92,20 +116,16 @@ export default function Profile() {
       </View>
 
       {/* User Info */}
-      <Text style={styles.username}>{user?.firstName}</Text>
-      <Text style={styles.handle}>{user?.username}</Text>
+      <Text style={styles.username}>{userData?.firstName}</Text>
+      <Text style={styles.handle}>{userData?.username}</Text>
       <View style={styles.locationContainer}>
         <Ionicons name="location-outline" size={16} color="black" />
       <Text style={styles.locationText}>{userData?.country.name.toUpperCase()}, {userData?.city.name.toUpperCase()} </Text>
       </View>
 
-      {/* Action Buttons */}
       <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/user/modify_profile')}>
-          <Text style={styles.actionButtonText}>Edit profile</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/purch/manage_purchases')}  >
-          <Text style={styles.actionButtonText}> Manage purchases</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={handleFollowToggle}>
+          <Text style={styles.actionButtonText}>{isFollowing ? 'Unfollow' : 'Follow'}</Text>
         </TouchableOpacity>
       </View>
 

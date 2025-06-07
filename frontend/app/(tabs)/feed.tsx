@@ -31,7 +31,6 @@ export default function Feed() {
     'PlusJakartaSans-Bold': require('@/assets/fonts/PlusJakartaSans-Bold.ttf'),
   });
 
- 
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts]);
@@ -55,7 +54,7 @@ export default function Feed() {
   );
 
   const navigateToUserProfile = useCallback((userId: string) => {
-    router.push('/profile');
+    router.push(`/user/${userId}`);
   }, [router]);
 
   const navigateToPostDetail = useCallback((postId: string) => {
@@ -90,17 +89,8 @@ export default function Feed() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Stack.Screen
-        options={{
-          title: 'Feed',
-          headerRight: () => (
-            <TouchableOpacity onPress={() => router.push('/post/create_post')} style={styles.headerButton}>
-              <Ionicons name="add-circle-outline" size={28} color="#3D5AF1" />
-            </TouchableOpacity>
-          ),
-        }}
-      />
+    <SafeAreaView>
+      <View style={styles.container}>
       <FlatList
         data={posts}
         renderItem={({ item }) => (
@@ -125,22 +115,37 @@ export default function Feed() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#3D5AF1']} />
         }
       />
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { 
-    flex: 1,
+    // flex: 1,
     backgroundColor: '#F3F4F6'
   },
-  centered: 
-  { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6' },
-  centeredEmptyFeed: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 },
+  centered:  { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    backgroundColor: '#F3F4F6'
+  },
+  centeredEmptyFeed: { 
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 50
+  },
   emptyFeedText: { marginTop: 15, fontSize: 18, fontWeight: '600', color: '#4B5563', fontFamily: 'PlusJakartaSans-Bold' },
   emptyFeedSubText: { marginTop: 5, fontSize: 14, color: '#6B7280', textAlign: 'center', fontFamily: 'PlusJakartaSans-Regular' },
-  feedList: { flex: 1 },
-  feedListContent: { paddingVertical: 10, paddingHorizontal: 5 },
+  feedList: { 
+    //flex: 1,
+  },
+  feedListContent: { 
+    paddingVertical: 10, 
+    paddingHorizontal: 5,
+  },
   postCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,

@@ -1,16 +1,17 @@
 import { create } from 'zustand';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import api from '@/services/api';
-import { Country, City, University, Product, UserData, ProductData } from '@/services/types';
+import { Country, City, University, Product, UserData, User, ProductData } from '@/services/types';
 
 interface UserState {
-  user: UserData | null;
+  user: User | null;
+  selectedUser: User | null;
   isLoading: boolean;
   error: string | null;
   updateProfile: (updates: Partial<UserData>) => Promise<void>;
   saveUser: (userData: any) => Promise<any>;
-  fetchUser: (clerkUserId: string) => Promise<UserData>;
-  fetchObjectUser: (userId: string) => Promise<UserData>;
+  fetchUser: (clerkUserId: string) => Promise<User>;
+  fetchObjectUser: (userId: string) => Promise<User>;
   addFavorite: (productId: string, clerkUserId: string) => Promise<void>;
   removeFavorite: (productId: string, clerkUserId: string) => Promise<void>;
   isFavorite: (productId: string) => boolean;
@@ -21,6 +22,7 @@ export const useUserStore = create<UserState>((set,get) => ({
   user: null,
   isLoading: false,
   error: null,
+  selectedUser: null,
 
   updateProfile: async (updates: Partial<UserData>) => {
     set({ isLoading: true, error: null });
@@ -94,11 +96,14 @@ export const useUserStore = create<UserState>((set,get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.get(`/users/userObject/${userId}`);
-      console.log('fetchUser response:', JSON.stringify(response.data.user, null, 2));
+      // console.log('fetchUser response:', JSON.stringify(response.data.user, null, 2));
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to fetch user');
       }
-      set({ isLoading: false });
+      set({ 
+        isLoading: false,
+        selectedUser: response.data.user,
+       });
       return response.data.user;
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Error fetching user';

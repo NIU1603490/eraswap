@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   locationText: {
-    fontSize: 15,
+    fontSize: 16,
     marginHorizontal: 5,
     alignItems: 'center',
     fontFamily: 'PlusJakartaSans-Bold',
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 14,
     color: 'black',
     fontFamily: 'PlusJakartaSans-Regular',
   },
@@ -183,13 +183,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 10,
-    marginVertical: 5,
+    marginVertical: 6,
   },
   categoryButton: {
     backgroundColor: '#E8EDF5',
     borderRadius: 20,
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     margin: 5,
   },
   categoryButtonSelected: {
