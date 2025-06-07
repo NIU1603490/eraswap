@@ -1,16 +1,17 @@
 import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, Image, FlatList } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Link, useRouter } from "expo-router";
-import { useClerk, useAuth, useUser} from '@clerk/clerk-expo';
+import { useAuth, useUser} from '@clerk/clerk-expo';
 import { useFonts } from "expo-font";
 import { Ionicons } from '@expo/vector-icons';
 
-import { getProductByUser } from '@/services/productService';
-import { UserData, Product } from '@/services/types';
+import { UserData, } from '@/services/types';
 import Toast from 'react-native-toast-message';
 import ProductCard from '@/components/productCard';
+import PostCard from '@/components/postCard';
 import { useUserStore } from '@/store/user-store';
 import { useProductStore } from '@/store/product-store';
+import { usePostStore } from '@/store/post-store';
 
 export default function Profile() {
   
@@ -18,6 +19,7 @@ export default function Profile() {
   const { isSignedIn, isLoaded } = useAuth();
   const { fetchUser } = useUserStore();
   const { fetchProductsByClerkId, userProducts} = useProductStore();
+  const { fetchPostsByClerkId, userPosts } = usePostStore();
   const router = useRouter();
 
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -46,6 +48,8 @@ export default function Profile() {
         console.log('Fetching products for user ID:', user.id);
         const productResponse = await fetchProductsByClerkId(user.id);
         console.log('Product data:', productResponse);
+
+        await fetchPostsByClerkId(user.id);
 
       } catch (err: any) {
         setError(err.message || 'Error al cargar los datos del usuario');
@@ -129,6 +133,30 @@ export default function Profile() {
           keyExtractor={(item) => item._id}
           numColumns={2}
           columnWrapperStyle={styles.productRow}
+          ListEmptyComponent={() => (
+            <View style={styles.placeholderContent}>
+              <Text style={styles.placeholderText}>No products available</Text>
+            </View>
+          )}
+        />
+      )}
+
+      {/* Render Post */}
+      {selectedTab === 'Post' && (
+        <FlatList
+          data={userPosts[user?.id || '']}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => router.push({ pathname: '/post/modify_post', params: { id: item._id } })}>
+              <PostCard
+                post={item}
+                onLikePress={() => {}}
+                onProfilePress={() => {}}
+                onPostDetailPress={() => {}}
+              />
+            </TouchableOpacity>
+
+          )}
+          keyExtractor={(item) => item._id}
           ListEmptyComponent={() => (
             <View style={styles.placeholderContent}>
               <Text style={styles.placeholderText}>No products available</Text>
@@ -240,7 +268,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabText: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: 'PlusJakartaSans-Regular',
     color: 'gray',
   },

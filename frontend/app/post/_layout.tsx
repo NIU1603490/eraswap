@@ -8,6 +8,7 @@ export default function RootLayout() {
         {/* <Stack.Screen name="(tabs)" options={{ headerShown: false }} /> */}
         <Stack.Screen name="create_post" options={{ title: 'Create Post' }} />
         <Stack.Screen name="create_product" options={{ title: 'Create Product' }} />
+        <Stack.Screen name="modify_post" options={{ title: 'Modify Post' }} />
         
       </Stack>
     </SafeAreaProvider>

@@ -35,14 +35,17 @@ export interface User {
 }
 
 export interface Post {
+  _id: string,
   author: User,
   content: string,
   images: [string],
-  likes: number,
+  likes: [string],
   comments: [{
     user: User,
     content: string,
-  }]
+  }],
+  createdAt: Date,
+  updatedAt: Date,
 }
 
 export interface Country {

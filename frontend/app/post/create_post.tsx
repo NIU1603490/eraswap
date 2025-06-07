@@ -6,10 +6,12 @@ import { useFonts } from 'expo-font';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import { usePostStore } from '@/store/post-store';
 
 export default function create_post() {
   const router = useRouter();
-  const { user, getToken } = useClerk();
+  const { user } = useClerk();
+  const { addPost } = usePostStore();
 
   const [postText, setPostText] = useState('');
   const [image, setImage] = useState('');
@@ -23,13 +25,18 @@ export default function create_post() {
     router.back();
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
+    if (!postText.trim()) return;
     try {
-      const token = getToken();
-      
+      await addPost({
+        content: postText.trim(),
+        images: image ? [image] : [],
+        userId: user?.id,
+      });
+      router.back();
       
     } catch (error) {
-      
+      console.error('Error creating post:', error);
     }
   };
 

@@ -148,7 +148,6 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   locationContainer: {
-    marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -184,7 +183,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 10,
-    marginBottom: 10,
+    marginVertical: 5,
   },
   categoryButton: {
     backgroundColor: '#E8EDF5',
@@ -210,8 +209,9 @@ const styles = StyleSheet.create({
   },
   products: {
     fontFamily: 'PlusJakartaSans-Regular',
-    marginTop: 10,
-    marginBottom: 50,
+    marginTop: 8,
+    marginBottom: 40,
+    backgroundColor: '#F3F4F6'
   },
   noProductsText: {
     marginTop: 30,

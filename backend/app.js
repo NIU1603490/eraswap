@@ -20,7 +20,7 @@ app.use('/api/users', userRoutes); // User routes
 app.use('/api/products', productRoutes); // Product routes
 app.use('/api/transactions', transactionRoutes); // Transaction routes
 // app.use('/api/follows', followRoutes);
-app.use('api/posts', postRoutes); 
+app.use('/api/posts', postRoutes); 
 
 
 

@@ -12,10 +12,7 @@ const postSchema = new Schema({
         required: true,
     },
     images: [{type: String,}],
-    likes: {
-        type: Number,
-        default: 0,
-    },
+    likes: [{type: String,}],
     comments: [{
         user: {
             type: mongoose.Schema.Types.ObjectId,
@@ -27,7 +24,7 @@ const postSchema = new Schema({
             default: Date.now,
         }, 
     }],
-}, {timestmaps: true});
+}, { timestmaps: true});
 
 module.exports = mongoose.model('Post', postSchema);
 

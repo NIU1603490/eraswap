@@ -8,15 +8,11 @@ import { useUserStore } from '../store/user-store';
 import { useUser } from '@clerk/clerk-expo';
 
 
-
-
 const ProductCard = ({ item, onPress }: { item: Product; onPress: () => void }) => {
   const { user } = useUser();
   const clerkUserId = user?.id || '';
 
   console.log('Product Card - User ID:', clerkUserId);
-  
-
   const { addFavorite, removeFavorite, isFavorite} = useUserStore();
   console.log('Favorite', isFavorite(item._id));
   
@@ -52,7 +48,6 @@ const ProductCard = ({ item, onPress }: { item: Product; onPress: () => void }) 
       fill={isFavorite(item._id) ? 'red' : 'none'}/>
     </TouchableOpacity>
 
-    
     <View style={styles.productInfo}>
     <Text style={styles.productName}>{item.title}</Text>
 

@@ -5,7 +5,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ICONCOLOR } from '@/assets/constants/theme';
 import SettingsOverlay from '@/components/settingsOverlay';
 import { useOverlay, OverlayProvider } from '@/contexts/overlayContext';
-import PostOverlay from '@/components/postOverlay';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -52,7 +51,7 @@ const TabBarWithOverlay = () => {
           headerTitle: '',
           headerStyle: {
             elevation: 0,
-            height: 80,
+            height: 85,
           },
           headerShadowVisible: false,
         })}
@@ -102,7 +101,6 @@ const TabBarWithOverlay = () => {
         />
       </Tabs>
       {overlayType === 'settings' && <SettingsOverlay isVisible={isOverlayVisible} onClose={() => setOverlayVisible(false)} />}
-      {overlayType === 'post' && <PostOverlay isVisible={isOverlayVisible} onClose={() => setOverlayVisible(false)} />}
     </View>
   );
 };
