@@ -1,0 +1,173 @@
+// src/types.ts
+export interface UserData {
+  clerkUserId: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  country: { _id: string; name: string };
+  city: { _id: string; name: string };
+  university: { _id: string; name: string };
+  profilePicture: string;
+  savedProducts: string[]; // obbjectId de productos guardados
+  rating: {
+    average: number;
+    count: number;
+  };
+}
+
+export interface User {
+  _id: string;
+  clerkUserId: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  country: { _id: string; name: string };
+  city: { _id: string; name: string };
+  university: { _id: string; name: string };
+  profilePicture: string;
+  rating: {
+    average: number;
+    count: number;
+  }
+  savedProducts: string[]; // ObjectId de productos guardados
+}
+
+export interface Post {
+  author: User,
+  content: string,
+  images: [string],
+  likes: number,
+  comments: [{
+    user: User,
+    content: string,
+  }]
+}
+
+export interface Country {
+  _id: string;
+  name: string;
+}
+
+export interface City {
+  _id: string;
+  name: string;
+  country: {name: string};
+}
+
+export interface University {
+  _id: string;
+  name: string;
+  city: {name: string};
+}
+
+export interface SignUpData {
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  password: string;
+  country: string;
+  city: string;
+  university: string;
+}
+
+export interface FormData{
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  country: string;
+  city: string;
+  university: string;
+  agreeTerms: boolean;
+}
+
+export interface SignInFields {
+  email: string;
+  password: string;
+}
+
+export interface ProductData {
+  title: string,
+  description: string,
+  category: string,
+  condition: string,
+  price: number,
+  seller: string,
+}
+
+export interface Product {
+  _id: string;
+  title: string;
+  description: string;
+  price: { amount: number; currency: string };
+  category: string;
+  images: string[];
+  seller: string;
+  location: {
+    city: {_id: string; name: string;},
+    country: {_id: string; name: string;}
+  },
+  condition: string;
+  status: string;
+  saves: number;
+}
+
+export interface TransactionData {
+  buyer: string;
+  product: string;
+  seller: string;
+  price: { amount: number; currency: string };
+  status: 'Pending' | 'Completed' | 'Canceled';
+  paymentMethod: 'cash' | 'online';
+  deliveryMethod: 'inPerson' | 'delivery';
+  meetingDate: Date;
+  meetingTime: string;
+  meetingLocation: string;
+  messageToSeller: string;
+}
+
+export interface Transaction {
+  _id: string;
+  buyer: {_id: string, username: string};
+  product: {_id: string, title: string, images: string[]};
+  seller: {_id: string, username: string};
+  price: { amount: number; currency: string };
+  status: 'Pending' | 'Completed' | 'Canceled';
+  paymentMethod: 'cash' | 'online';
+  deliveryMethod: 'inPerson' | 'delivery';
+  meetingDate: Date;
+  meetingTime: string;
+  meetingLocation: string;
+  messageToSeller: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+  // Base interface for all API responses
+  export interface BaseApiResponse {
+    success: boolean;
+    message?: string;
+  }
+  
+  // Specific response types for different API calls
+  export interface CountriesResponse extends BaseApiResponse {
+    countries: Country[];
+  }
+  
+  export interface CitiesResponse extends BaseApiResponse {
+    cities: City[];
+  }
+
+  export interface UniversitiesResponse extends BaseApiResponse {
+      universities: University[];
+    }
+  
+  // Generic response type for other API calls (e.g., registerUser)
+  export interface ApiResponse<T> extends BaseApiResponse {
+    data?: T;
+  }

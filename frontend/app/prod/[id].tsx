@@ -1,0 +1,481 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Dimensions, FlatList } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Product, UserData } from '@/services/types';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFonts } from 'expo-font';
+import { fetchObjectUser } from '@/services/authService';
+import { useUser } from '@clerk/clerk-expo';
+import { useProductStore } from '@/store/product-store';
+
+export default function ProductDetail() {
+  const { id } = useLocalSearchParams() as { id: string };
+  const { fetchProductById, deleteProduct, isLoading: contextLoading, error: contextError, selectedProduct } = useProductStore();
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const router = useRouter();
+  const { user } = useUser();
+
+  const [fontsLoaded] = useFonts({
+    'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
+    'PlusJakartaSans-Bold': require('@/assets/fonts/PlusJakartaSans-Bold.ttf'),
+  });
+
+  useEffect(() => {
+    if (id) {
+      fetchProductById(id).catch((err) => {
+        console.error('Error fetching product:', err);
+      });
+    }
+  }, [id, fetchProductById]);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (selectedProduct?.seller) {
+        try {
+          const userResponse = await fetchObjectUser(selectedProduct.seller);
+          setUserData(userResponse);
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setUserData(null);
+        }
+      } else {
+        setUserData(null); // Netejar userData si no hi ha venedor
+      }
+    };
+    fetchUserData();
+  }, [selectedProduct]);
+
+  const handleDeleteProduct = async () => {
+    if (!user?.id) {
+      Alert.alert('Error', 'User not authenticated');
+      return;
+    }
+
+    Alert.alert(
+      'Delete Product',
+      'Are you sure you want to delete this product?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteProduct(id, user.id);
+              Alert.alert('Success', 'Product deleted successfully');
+              router.back();
+            } catch (error) {
+              Alert.alert('Error', contextError || 'Failed to delete product');
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  if (!fontsLoaded || contextLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3D5AF1" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (contextError || !selectedProduct || !userData) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{contextError || 'Product or seller not found'}</Text>
+          <TouchableOpacity style={styles.backButtonError} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const isSeller = user?.id === userData.clerkUserId;
+  const images = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : ['https://via.placeholder.com/400x300.png?text=No+Image'];
+
+  const renderImageItem = ({ item }: { item: string }) => (
+    <Image source={{ uri: item }} style={styles.carouselImage} />
+  );
+
+  const onScroll = (event: any) => {
+    const slideSize = Dimensions.get('window').width;
+    const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+    setActiveIndex(index);
+  };
+
+  return (
+    <SafeAreaView style={[styles.container, isSeller && styles.sellerContainer]}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#1F2937" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{selectedProduct.title || 'Unknown Product'}</Text>
+          <View style={{ width: 24 }} />
+        </View>
+
+        {/* Carrusel d'imatges */}
+        <FlatList
+          data={images}
+          renderItem={renderImageItem}
+          keyExtractor={(item, index) => index.toString()}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={onScroll}
+          style={styles.carousel}
+          getItemLayout={(data, index) => ({
+            length: Dimensions.get('window').width,
+            offset: Dimensions.get('window').width * index,
+            index,
+          })}
+        />
+
+        {/* Indicadors */}
+        <View style={styles.pagination}>
+          {images.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                activeIndex === index && styles.activeDot,
+              ]}
+            />
+          ))}
+        </View>
+
+        {/* Product Info */}
+        <View style={styles.infoSection}>
+          {/* Seller Info */}
+          <View style={styles.sellerInfoContainer}>
+            <Image
+              source={{ uri: user?.imageUrl || 'https://via.placeholder.com/40x40.png?text=Seller' }}
+              style={styles.sellerImage}
+            />
+            <View style={styles.sellerTextContainer}>
+              <Text style={styles.sellerName}>
+                {userData.firstName || 'Unknown'} {userData.lastName || 'Seller'}
+              </Text>
+              <Text style={styles.selleruserName}>@{userData.username || 'unknown'}</Text>
+              <View style={styles.sellerRatingContainer}>
+                {[...Array(Math.floor(userData.rating.average || 0))].map((_, i) => (
+                  <Ionicons key={`full-${i}`} name="star" size={16} color="#F59E0B" />
+                ))}
+                {userData.rating.average % 1 !== 0 && (
+                  <Ionicons name="star-half" size={16} color="#F59E0B" />
+                )}
+                {[...Array(5 - Math.ceil(userData.rating.average || 0))].map((_, i) => (
+                  <Ionicons key={`empty-${i}`} name="star-outline" size={16} color="#F59E0B" />
+                ))}
+                <Text style={styles.sellerReviews}>({userData.rating.count || 0})</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Product Details */}
+          <Text style={styles.descriptionTitle}>Description</Text>
+          <Text style={styles.descriptionText}>{selectedProduct.description || 'No description available'}</Text>
+          
+          <Text style={styles.metaText}>
+            Location: {selectedProduct.location.city?.name}, {selectedProduct.location.country?.name}
+          </Text>
+          <Text style={styles.metaText}>Category: {selectedProduct.category}</Text>
+          <Text style={styles.metaText}>Condition: {selectedProduct.condition}</Text>
+          <Text style={styles.metaText}>Status: {selectedProduct.status}</Text>
+          <Text style={styles.productPrice}>
+            {selectedProduct.price.amount} {selectedProduct.price.currency}
+          </Text>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionButtonsContainer}>
+          {isSeller ? (
+            <>
+              <TouchableOpacity
+                style={styles.modifyButton}
+                onPress={() =>
+                  router.push({
+                    pathname: `/prod/modify_product`,
+                    params: { id: selectedProduct._id },
+                  })
+                }
+              >
+                <Text style={styles.modifyButtonText}>Modify</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteProduct}>
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity style={styles.sendMessageButton} onPress={() => router.push('/chat/chat_detail')}>
+                <Text style={styles.sendMessageButtonText}>Send Message</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.buyNowButton}
+                onPress={() =>
+                  router.push({
+                    pathname: `/purch/[id]`,
+                    params: { id: selectedProduct._id, sellerId: userData.clerkUserId },
+                  })
+                }
+              >
+                <Text style={styles.buyNowButtonText}>Buy Now</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  sellerContainer: {
+    backgroundColor: 'fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    fontFamily: 'PlusJakartaSans-Regular',
+    marginBottom: 15,
+  },
+  backButtonError: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#3D5AF1',
+    borderRadius: 12,
+  },
+  backButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'PlusJakartaSans-Bold',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontFamily: 'PlusJakartaSans-Bold',
+    color: '#1F2937',
+  },
+  carousel: {
+    height: 300,
+  },
+  carouselImage: {
+    width: Dimensions.get('window').width,
+    height: 300,
+    resizeMode: 'cover',
+    backgroundColor: '#E5E7EB',
+  },
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D1D5DB',
+    marginHorizontal: 4,
+  },
+  activeDot: {
+    backgroundColor: '#3D5AF1',
+    width: 12,
+  },
+  infoSection: {
+    padding: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  sellerInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  sellerImage: {
+    width: 45,
+    height: 45,
+    borderRadius: 100,
+    marginRight: 10,
+    backgroundColor: '#E5E7EB',
+  },
+  sellerTextContainer: {
+    flex: 1,
+  },
+  sellerName: {
+    fontSize: 16,
+    fontFamily: 'PlusJakartaSans-Bold',
+    color: '#1F2937',
+  },
+  selleruserName: {
+    fontSize: 14,
+    fontFamily: 'PlusJakartaSans-Regular',
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  sellerRatingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sellerReviews: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginLeft: 5,
+    fontFamily: 'PlusJakartaSans-Regular',
+  },
+  metaText: {
+    fontSize: 14,
+    fontFamily: 'PlusJakartaSans-Regular',
+    color: '#6B7280',
+    marginBottom: 5,
+  },
+  productPrice: {
+    fontSize: 18,
+    fontFamily: 'PlusJakartaSans-Bold',
+    color: '#3D5AF1',
+    marginVertical: 10,
+    alignSelf: 'flex-end',
+  },
+  descriptionTitle: {
+    fontSize: 16,
+    fontFamily: 'PlusJakartaSans-Bold',
+    color: '#1F2937',
+    marginBottom: 5,
+  },
+  descriptionText: {
+    fontSize: 14,
+    fontFamily: 'PlusJakartaSans-Regular',
+    color: '#374151',
+    marginBottom: 10,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  sendMessageButton: {
+    flex: 1,
+    height: 48,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#3D5AF1',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  sendMessageButtonText: {
+    color: '#3D5AF1',
+    fontSize: 14,
+    fontFamily: 'PlusJakartaSans-Bold',
+  },
+  buyNowButton: {
+    flex: 1,
+    height: 48,
+    backgroundColor: '#3D5AF1',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  buyNowButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'PlusJakartaSans-Bold',
+  },
+  modifyButton: {
+    flex: 1,
+    height: 48,
+    backgroundColor: '#3D5AF1',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  modifyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'PlusJakartaSans-Bold',
+  },
+  deleteButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontFamily: 'PlusJakartaSans-Bold',
+    color: '#EF4444',
+  },
+});

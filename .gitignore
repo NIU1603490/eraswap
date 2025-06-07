@@ -1,0 +1,50 @@
+# Node modules (ambdós)
+**/node_modules/
+
+# Entorns
+.env
+**/.env
+.env.local
+.env.*.local
+
+# Expo i React Native
+.expo/
+.expo-shared/
+*.expo/
+web-build/
+dist/
+*.log
+*.tmp
+
+# Clerk config local
+.clerk/
+
+# Cloudinary config local
+cloudinary.js
+cloudinary-config.js
+
+# VSCode / Cursor
+.vscode/
+.cursor/
+
+# Android/iOS builds
+android/
+ios/
+*.apk
+*.ipa
+
+# Debug i test
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+coverage/
+
+# Fitxers del sistema
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Exemple que no cal pujar
+frontend/app-example/

@@ -1,0 +1,191 @@
+const User = require('../models/user');
+const Country = require('../models/country');
+const City = require('../models/city');
+const University = require('../models/university');
+const Product = require('../models/product');
+
+const { isValidObjectId } = require('mongoose');
+
+//save user to database
+const createUser = async (req, res) => {
+    const { clerkUserId, firstName, lastName, username, email, country, city, university} = req.body;
+    try {
+        // Validate required fields
+        if (!clerkUserId || !firstName || !lastName || !username || !email || !country || !city || !university) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide all required fields',
+            });
+        }
+
+        // Check if country, city, and university exist
+        if (!isValidObjectId(country) || !isValidObjectId(city) || !isValidObjectId(university)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid country, city, or university ID',
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ clerkUserId });
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                message: 'User already exists',
+            });
+        }
+        // Validate required fields
+        const newUser = new User({
+          clerkUserId,
+          firstName,
+          lastName,
+          username,
+          email,
+          country,
+          city,
+          university,
+          profilePicture: 'https://www.gravatar.com/avatar/?d=mp',
+        });
+
+        // Save the user to the database
+        await newUser.save();
+        res.status(201).json({ success: true, message: 'User created successfully', user: newUser});
+
+    } catch(error) {
+      console.error('Error creating user:', error);
+      res.status(500).json({ success: false, message: 'Error creating user', error });
+    }
+}
+
+
+//get user by clerkUserId
+// router.get('/user/:clerkUserId', userController.getUser); // get a user by clerkUserId
+const getUserByClerkId = async (req, res) => {
+    try {
+        const { clerkUserId } = req.params;
+        if (!clerkUserId) {
+            return res.status(400).json({ success: false, message: 'clerkUserId is required' });
+        }
+        const user = await User.findOne({ clerkUserId })
+        .populate('country', 'name')
+        .populate('city', 'name')
+        .populate('university', 'name')
+    
+        res.status(200).json({
+            success: true,
+            user,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching user',
+            error,
+        });
+    }
+}
+
+//get user by Object_id
+const getUser = async (req, res) => {
+    try {
+        const {userId} = req.params;
+        if (!userId) {
+            return res.status(400).json({ success: false, message: 'UserId is required' });
+        }
+        const user = await User.findById(userId);
+        res.status(200).json({
+            success: true,
+            user,
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching user',
+            error,
+        });
+        
+    }
+}
+
+const getFavorites = async (req, res) => {
+
+}
+
+// Add product to favorites
+const addFavorite = async (req, res) => {
+    console.log('Adding Favorite')
+    const { productId, userId } = req.body;
+
+    try {
+      const user = await User.findOne({ clerkUserId: userId });
+      console.log(user.id);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+  
+      const product = await Product.findById(productId);
+      console.log(product.title)
+      if (!product) {
+        return res.status(404).json({ success: false, message: 'Product not found' });
+      }
+  
+      if (user.savedProducts.includes(productId)) {
+        return res.status(400).json({ success: false, message: 'Product already in favorites' });
+      }
+      console.log('Saved Products:', user.savedProducts)
+  
+      user.savedProducts.push(product);
+      const response = await user.save();
+      console.log(response);
+  
+      res.status(200).json({
+        success: true,
+        message: 'Product added to favorites',
+        product,
+      });
+    } catch (error) {
+      console.error('Error adding to favorites:', error);
+      res.status(500).json({ success: false, message: 'Error adding to favorites', error });
+    }
+  };
+
+const removeFavorite = async (req, res) => {
+  const { productId } = req.params;
+  const { userId } = req.body;
+  try {
+    if (!isValidObjectId(userId) || !isValidObjectId(productId)) {
+      return res.status(400).json({ success: false, message: 'Invalid userId or productId' });
+    }
+
+    const user = await User.findOne({ clerkUserId: userId });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (!user.savedProducts.includes(productId)) {
+      return res.status(400).json({ success: false, message: 'Product not in favorites' });
+    }
+
+    user.savedProducts = user.savedProducts.filter((id) => id.toString() !== productId);
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Product removed from favorites',
+    });
+  } catch (error) {
+    console.error('Error removing from favorites:', error);
+    res.status(500).json({ success: false, message: 'Error removing from favorites', error });
+  }
+
+}
+
+// Export the functions to be used in routes
+module.exports = {
+    createUser,
+    getUser,
+    getUserByClerkId,
+    getFavorites,
+    addFavorite,
+    removeFavorite,
+};
