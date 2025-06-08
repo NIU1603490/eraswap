@@ -22,7 +22,9 @@ export const useFollowStore = create<FollowState>((set, get) => ({
   fetchFollowers: async (userId: string) => {
     set({ isLoading: true, error: null });
     try {
+      console.log('GET FOLLOWERS');
       const response = await api.get(`/follows/followers/${userId}`);
+      console.log(response);
       const followers = response.data.followers || [];
       set({ followers, isLoading: false });
       return followers;
@@ -46,6 +48,8 @@ export const useFollowStore = create<FollowState>((set, get) => ({
   },
 
   followUser: async (followerId: string, followingId: string) => {
+    //  user who wants to follow -->  follower
+    // ID of the user to be followed --> following
     set({ isLoading: true, error: null });
     try {
       await api.post(`/follows/follow/${followingId}`, { followerId });

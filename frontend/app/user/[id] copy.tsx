@@ -1,119 +1,121 @@
-import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, Image, FlatList, ActivityIndicator } from 'react-native';
-import React, { useState, useEffect } from 'react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useUser } from '@clerk/clerk-expo';
-import { useFonts } from 'expo-font';
+import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, Image, FlatList } from 'react-native'
+import React, { useState, useEffect } from 'react'
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useAuth, useUser} from '@clerk/clerk-expo';
+import { useFonts } from "expo-font";
 import { Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message';
 
+import { User } from '@/services/types';
+import Toast from 'react-native-toast-message';
 import ProductCard from '@/components/productCard';
+import PostCard from '@/components/postCard';
 import { useUserStore } from '@/store/user-store';
 import { useProductStore } from '@/store/product-store';
+import { usePostStore } from '@/store/post-store';
 import { useFollowStore } from '@/store/follow-store';
-import { User } from '@/services/types';
+
 
 export default function OtherProfile() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const { id } = useLocalSearchParams() as { id: string };
   const { user } = useUser();
-  const { fetchObjectUser, fetchUser, user: current, selectedUser} = useUserStore();
-  const { fetchProductsByClerkId, userProducts } = useProductStore();
+  const { isLoaded } = useAuth();
+  const { fetchObjectUser,fetchUser, user : userr } = useUserStore();
+  const { fetchProductsByClerkId, userProducts} = useProductStore();
+  const { fetchPostsByClerkId, userPosts } = usePostStore();
   const { followers, following, fetchFollowers, fetchFollowing, followUser, unfollowUser } = useFollowStore();
+  const router = useRouter();
 
-  const [profileData, setProfileData] = useState<User | null>(null);
+  const [userData, setUserData] = useState<User | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedTab, setSelectedTab] = useState('Products');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [fontsLoaded] = useFonts({
     'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
     'PlusJakartaSans-Bold': require('@/assets/fonts/PlusJakartaSans-Bold.ttf'),
   });
 
+
   useEffect(() => {
     const loadData = async () => {
       if (!id) return;
       try {
-        setLoading(true);
-        const profile = await fetchObjectUser(id as string);
-        setProfileData(profile);
-        await fetchProductsByClerkId(profile.clerkUserId);
-        await Promise.all([fetchFollowers(id as string), fetchFollowing(id as string)]);
+
         if (user?.id) {
           const myData = await fetchUser(user.id);
-          setCurrentUser(myData);
+          // setCurrentUser(myData);
         }
+        const userResponse = await fetchObjectUser(id);
+        setUserData(userResponse);
+        console.log(userResponse.clerkUserId);
+
+        const productResponse = await fetchProductsByClerkId(user.id);
+        await fetchPostsByClerkId(userResponse.clerkUserId);
+        await fetchFollowers(userResponse.clerkUserId);
+        await fetchFollowing(userResponse.clerkUserId);
+        
+        
+
       } catch (err: any) {
         setError(err.message || 'Error al cargar los datos del usuario');
-        Toast.show({ type: 'error', text1: err.message });
       } finally {
         setLoading(false);
-        console.log(current);
-        console.log(selectedUser);
       }
     };
     loadData();
-  }, [id, user?.id]);
+  }, [id, isLoaded]);
 
   useEffect(() => {
-    if (current) {
-      setIsFollowing(following.some(f => f._id === current._id));
+    if (user?.id) {
+      setIsFollowing(followers.some(f => f._id === user?.id));
     }
-  }, [following, current]);
+  }, [followers, user?.id]);
 
   const handleFollowToggle = async () => {
-    if (!current || !id) return;
+    // console.log(user?.id)
+    // console.log(id)
+    if(!user?.id){
+      return
+    }
+    console.log('FOLLOW FUNCTION')
     try {
       if (isFollowing) {
-        await unfollowUser(current._id, id as string);
+        await unfollowUser(id, user?.id);
       } else {
-        console.log('follow function');
-        console.log(current._id);
-        await followUser(current._id, id as string);
+        if(userData?.clerkUserId) {
+          console.log('FOLLOW', userData?._id, userr?._id);
+          const responseFollow = await followUser(userr?._id, userData?._id);
+          console.log(responseFollow);
+        }
+        
       }
-      await fetchFollowers(id as string);
-      await fetchFollowing(id as string);
+      await Promise.all([fetchFollowers(id as string), fetchFollowing(id as string)]);
     } catch (err: any) {
       Toast.show({ type: 'error', text1: err.message });
     }
   };
 
-  if (!fontsLoaded || loading) {
-    return (
-      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Loading...</Text>
-      </SafeAreaView>
-    );
-  }
-
-//   if (error || !current || !selectedUser) {
-//     return (
-//       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-//         <Text>{error || 'User not found'}</Text>
-//       </SafeAreaView>
-//     );
-//   }
 
   return (
-    <SafeAreaView>
-      <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#1F2937" />
-          </TouchableOpacity>
-          <View style={{ width: 24 }} />
-      </View>
-
+      <SafeAreaView>
+      {/* Profile Info */}
+      <View style={styles.container}>
       <View style={styles.profileContainer}>
+        
         <View style={styles.followStats}>
           <View style={styles.followItem}>
             <Text style={styles.followCount}>{followers.length}</Text>
             <Text style={styles.followLabel}>followers</Text>
           </View>
 
-          <Image source={{ uri: selectedUser?.profilePicture }} style={styles.profileImage} />
-
+          <Image
+      
+          source={{ uri: user?.imageUrl }}
+          style={styles.profileImage} 
+          />
+        
           <View style={styles.followItem}>
             <Text style={styles.followCount}>{following.length}</Text>
             <Text style={styles.followLabel}>following</Text>
@@ -121,46 +123,47 @@ export default function OtherProfile() {
         </View>
       </View>
 
-      <Text style={styles.username}>{selectedUser?.firstName}</Text>
-      <Text style={styles.handle}>@{selectedUser?.username}</Text>
+      {/* User Info */}
+      <Text style={styles.username}>{userData?.firstName}</Text>
+      <Text style={styles.handle}>{userData?.username}</Text>
       <View style={styles.locationContainer}>
         <Ionicons name="location-outline" size={16} color="black" />
-        <Text style={styles.locationText}>{selectedUser?.country.name.toUpperCase()}, {profileData?.city.name.toUpperCase()}</Text>
+      <Text style={styles.locationText}>{userData?.country.name.toUpperCase()}, {userData?.city.name.toUpperCase()} </Text>
       </View>
 
-        {!current ? (
-            <ActivityIndicator size="small" color="black" />
-            ) : (
-              <View style={styles.actionButtons
+      <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleFollowToggle}>
+          <Text style={styles.actionButtonText}>{isFollowing ? 'Unfollow' : 'Follow'}</Text>
+        </TouchableOpacity>
+      </View>
 
-              }>
-                <TouchableOpacity style={styles.actionButton} onPress={handleFollowToggle}>
-                <Text style={styles.actionButtonText}>
-                {isFollowing ? 'Unfollow' : 'Follow'}
-                </Text>
-            </TouchableOpacity>
-
-              </View>
-            
-            )}
-
+      {/* Tabs */}
       <View style={styles.tabContainer}>
         {['Products', 'Post', 'Reviews'].map((tab) => (
-          <TouchableOpacity key={tab} style={styles.tabButton} onPress={() => setSelectedTab(tab)}>
-            <Text style={[styles.tabText, selectedTab === tab && styles.tabTextSelected]}>
+          <TouchableOpacity
+            key={tab}
+            style={styles.tabButton}
+            onPress={() => setSelectedTab(tab)}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                selectedTab === tab && styles.tabTextSelected,
+              ]}
+            >
               {tab}
             </Text>
             {selectedTab === tab && <View style={styles.tabUnderline} />}
           </TouchableOpacity>
         ))}
       </View>
-
+      </View>
+      {/* Render Products */}
       {selectedTab === 'Products' && (
         <FlatList
           data={userProducts}
-          renderItem={({ item }) => (
-            <ProductCard item={item} onPress={() => router.push(`/prod/${item._id}`)} />
-          )}
+          renderItem={({ item }) => <ProductCard item={item} 
+          onPress={()=> router.push(`/prod/${item._id}`)}/>}
           keyExtractor={(item) => item._id}
           numColumns={2}
           columnWrapperStyle={styles.productRow}
@@ -171,17 +174,43 @@ export default function OtherProfile() {
           )}
         />
       )}
+
+      {/* Render Post */}
+      {selectedTab === 'Post' && (
+        <FlatList
+          data={userPosts[user?.id || '']}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => router.push({ pathname: '/post/modify_post', params: { id: item._id } })}>
+              <PostCard
+                post={item}
+                onLikePress={() => {}}
+                onProfilePress={() => {}}
+                onPostDetailPress={() => {}}
+              />
+            </TouchableOpacity>
+
+          )}
+          keyExtractor={(item) => item._id}
+          ListEmptyComponent={() => (
+            <View style={styles.placeholderContent}>
+              <Text style={styles.placeholderText}>No products available</Text>
+            </View>
+          )}
+        />
+      )}
+
+
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+  container: {
+    // flex: 1,
+    backgroundColor: '#fff',
   },
   profileContainer: {
+    marginTop: 10,
     padding: 10,
     alignItems: 'center',
   },
@@ -235,6 +264,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginVertical: 10,
+
   },
   actionButton: {
     borderWidth: 1,
@@ -252,17 +282,17 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    // borderBottomWidth: 1,
+    // borderBottomColor: '#f0f0f0',
     marginHorizontal: 15,
     marginTop: 10,
   },
   tabButton: {
-    paddingVertical: 10,
+    paddingVertical: 8,
     alignItems: 'center',
   },
   tabText: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: 'PlusJakartaSans-Regular',
     color: 'gray',
   },
@@ -274,11 +304,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 2,
     backgroundColor: 'black',
-    marginTop: 5,
+    marginTop: 3,
   },
   productRow: {
     justifyContent: 'space-between',
     paddingHorizontal: 15,
+    paddingVertical: 10,
   },
   placeholderContent: {
     flex: 1,

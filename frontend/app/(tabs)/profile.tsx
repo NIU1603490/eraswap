@@ -52,7 +52,9 @@ export default function Profile() {
         // console.log('Product data:', productResponse);
 
         await fetchPostsByClerkId(user.id);
-        await fetchFollowers(user.id);
+        console.log('Fetching followers:', user.id);
+        const follows = await fetchFollowers(user.id);
+        console.log(follows);
         await fetchFollowing(user.id);
 
       } catch (err: any) {
@@ -150,6 +152,7 @@ export default function Profile() {
       {/* Render Post */}
       {selectedTab === 'Post' && (
         <FlatList
+          style={styles.postContainer}
           data={userPosts[user?.id || '']}
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => router.push({ pathname: '/post/modify_post', params: { id: item._id } })}>
@@ -283,10 +286,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 10,
   },
+  postContainer: {
+    marginTop: 10,
+  },
   placeholderContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop:30,
   },
   placeholderText: {
     fontSize: 16,

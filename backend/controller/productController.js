@@ -69,7 +69,7 @@ const createProduct = async (req, res) => {
           },
         },
         condition,
-        status: 'available',
+        status: 'Available',
         saves: 0,
       });
   

@@ -3,12 +3,19 @@ const User = require('../models/user');
 
 const followUser = async (req, res) => {
     console.log('FOLLOW')
+    //  user who wants to follow -->  follower
+    // ID of the user to be followed --> following
     try {
         const { followerId } = req.body; //  user who wants to follow
+        console.log(followerId);
         const followingId = req.params.id; // ID of the user to be followed
-        consolr.log('This:', followerId, 'want to follow:', followingId)
+        console.log(followingId);
+        console.log('This:', followerId, 'want to follow:', followingId);
+        
         // Check if the follower and following are the same
-        if (followerId.toString() === followingId) {
+        console.log(followerId.toString() === followingId.toString())
+        if (followerId.toString() === followingId.toString()) {
+            console.log('1');
             return res.status(400).json({ 
                 success: false,
                 message: 'Follower and following cannot be the same'
@@ -16,8 +23,21 @@ const followUser = async (req, res) => {
         }
 
         // Check if the user to be followed exists
-        const userToFollow = await User.findById(followingId);
-        if (!userToFollow) {
+        const userFollower = await User.findOne({ _id: followingId });
+        console.log('User found', userFollower);
+        
+        if (!userFollower) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Check if the user who wants to follow exists
+        const userFollowing = await User.findOne({ _id: followerId });
+        console.log('User found', userFollowing);
+        
+        if (!userFollowing) {
             return res.status(404).json({ 
                 success: false,
                 message: 'User not found'
@@ -26,22 +46,23 @@ const followUser = async (req, res) => {
 
         // Check if the follow relationship already exists
         const existingFollow = await Follow.findOne({
-            follower: followerId,
-            following: followingId
+            follower: userFollower,
+            following: userFollowing
         });
+
         if (existingFollow) {
             return res.status(400).json({ 
-                success: false,
                 message: 'Already following this user'
             });
         }
-
         // Create a new follow relationship
         const newFollow = new Follow({
-            follower: followerId,
-            following: followingId
+            follower: userFollower,
+            following: userFollowing
         });
+
         await newFollow.save();
+        console.log('new follow:', newFollow);
 
         res.status(201).json({ 
             success: true,
@@ -103,10 +124,13 @@ const unfollowUser = async (req, res) => {
 }
 
 const getFollowers = async (req, res) => {
+    console.log('GET FOLLOWERS');
     try {
-        const { userId } = req.params.id; 
+        const userId = req.params.id; 
+        console.log(userId);
         // Check if the user exists
-        const user = await User.findById(userId);
+        const user = await User.findOne({clerkUserId: userId});
+        console.log(user);
         if (!user) {
             return res.status(404).json({ 
                 success: false,
@@ -114,10 +138,11 @@ const getFollowers = async (req, res) => {
             });
         }
 
-        const followers = await Follow.find({ following: userId })
+        const followers = await Follow.find({ follower: user._id })
             .populate('follower', 'name profilePicture ') // Populate follower details
             .sort({ createdAt: -1 }); // Sort by most recent
-
+        
+        console.log(followers); 
         res.status(200).json({
             success: true,
             count: followers.length,
@@ -137,11 +162,12 @@ const getFollowers = async (req, res) => {
 
 // Get users that the user is following
 const getFollowing = async (req, res) => {
+    console.log('GET FOLLOWING');
     try {
-        const { userId } = req.params.id; 
+        const userId = req.params.id; 
 
         // Check if the user exists
-        const user = await User.findById(userId);
+        const user = await User.findOne({clerkUserId: userId});
         if (!user) {
             return res.status(404).json({ 
                 success: false,
@@ -149,7 +175,7 @@ const getFollowing = async (req, res) => {
             });
         }
 
-        const following = await Follow.find({ follower: userId })
+        const following = await Follow.find({ following: user._id })
             .populate('following', 'name profilePicture') // Populate following details
             .sort({ createdAt: -1 }); // Sort by most recent
         

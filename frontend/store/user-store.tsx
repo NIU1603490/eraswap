@@ -102,7 +102,7 @@ export const useUserStore = create<UserState>((set,get) => ({
       }
       set({ 
         isLoading: false,
-        selectedUser: response.data.user,
+        selectedUser: {...response.data.user},
        });
       return response.data.user;
     } catch (error: any) {
