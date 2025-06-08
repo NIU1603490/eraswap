@@ -14,7 +14,7 @@
 web-build/
 dist/
 *.log
-*.tmp´
+*.tmp
 .expo.env.d.ts
 
 # Clerk config local

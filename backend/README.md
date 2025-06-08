@@ -19,3 +19,9 @@ El backend segueix un patró MVC (Model-Vista-Controlador) adaptat per a APIs RE
 2. **Controladors**: Gestionen les sol·licituds HTTP i retornen respostes.
 3. **Rutes**: Defineixen els endpoints de l'API i els connecten amb els controladors.
 4. **Middlewares**: Processen les sol·licituds abans d'arribar als controladors (per exemple, autenticació).
+
+
+## Configuració de Cloudinary
+El projecte utilitza [Cloudinary](https://cloudinary.com) per emmagatzemar les imatges.
+
+Després d'afegir les credencials, podràs pujar imatges mitjançant l'endpoint `POST /api/images/upload`

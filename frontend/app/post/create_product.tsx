@@ -9,6 +9,7 @@ import { useUser} from '@clerk/clerk-expo';
 import * as ImagePicker from 'expo-image-picker';
 import { categories, conditions } from '@/assets/constants/constants';
 import { useProductStore } from '@/store/product-store';
+import { uploadImage } from '@/services/imageService';
 
 // Format de les categories i condicions per al Dropdown
 const categoryData = categories.map((cat) => ({ label: cat.name, value: cat.name }));
@@ -49,13 +50,26 @@ export default function CreateProduct() {
       return;
     }
 
+    const uploadedUrls: string[] = [];
+    for (const uri of images) {
+      try {
+        const url = await uploadImage(uri);
+        uploadedUrls.push(url);
+      } catch (err) {
+        console.error('Error uploading image:', err);
+        alert('Failed to upload images');
+        return;
+      }
+
+    } 
+
     const productData = { 
       title,
       description,
       price: parseFloat(price),
       category,
       condition,
-      images,
+      images: uploadedUrls,
       seller: user.id };
 
 
