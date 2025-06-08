@@ -6,5 +6,6 @@ const imageController = require('../controller/imageController');
 const upload = multer({ dest: 'uploads/' });
 
 router.post('/upload', upload.single('image'), imageController.uploadImage);
+router.get('/ping', imageController.pingCloudinary);
 
 module.exports = router;

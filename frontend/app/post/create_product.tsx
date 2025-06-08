@@ -95,7 +95,7 @@ export default function CreateProduct() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      // mediaTypes: ['images'],
       allowsEditing: true,
       base64: true,
     });
