@@ -8,7 +8,7 @@ interface UserState {
   selectedUser: User | null;
   isLoading: boolean;
   error: string | null;
-  updateProfile: (updates: Partial<UserData>) => Promise<void>;
+  updateProfile: (clerkUserId: string, updates: Partial<UserData>) => Promise<void>;
   saveUser: (userData: any) => Promise<any>;
   fetchUser: (clerkUserId: string) => Promise<User>;
   fetchObjectUser: (userId: string) => Promise<User>;
@@ -24,21 +24,14 @@ export const useUserStore = create<UserState>((set,get) => ({
   error: null,
   selectedUser: null,
 
-  updateProfile: async (updates: Partial<UserData>) => {
+  updateProfile: async (clerkUserId: string, updates: Partial<UserData>) => {
     set({ isLoading: true, error: null });
     try {
-      const { user: clerkUser } = useUser();
-      if (!clerkUser) throw new Error('User not authenticated');
-
-      await clerkUser.update({
-        firstName: updates.firstName || clerkUser.firstName,
-        lastName: updates.lastName || clerkUser.lastName,
-      });
-
-      const response = await api.patch(`/users/${clerkUser.id}`, updates);
+    
+      const response = await api.patch(`/users/${clerkUserId}`, updates);
 
       set((state) => ({
-        user: state.user ? { ...state.user, ...updates } : null,
+        user: state.user ? { ...state.user, ...response.data.user } : null,
         isLoading: false,
       }));
     } catch (error: any) {

@@ -4,118 +4,87 @@ const User = require('../models/user');
 const Product = require('../models/product');
 
 
-const getConversations = async (req, res) => {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ success: false, message: 'You must be logged' });
-        }
-        // Find conversations where the user is a participant
-        const userId = req.user._id;
-        const conversations = await Conversation.find({ participants: userId})
-            .populate('participants', 'name profilePicture') // Populate participants with name and profile picture
-            .populate('product', 'title images') // Populate product with title and images
-            .populate('lastMessage')
-            .sort({ updatedAt: -1 }); // Sort by updatedAt in descending order
+const { isValidObjectId } = require('mongoose');
 
-            
-        res.status(200).json({
-            success: true,
-            conversations});
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Error fetching conversations', error });
+// Get conversations for a given user (clerkUserId)
+const getConversationsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findOne({ clerkUserId: userId });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
-}
+    const conversations = await Conversation.find({ participants: user._id })
+      .populate('participants', 'username firstName lastName profilePicture')
+      .populate('product', 'title images')
+      .populate({
+        path: 'lastMessage',
+        populate: { path: 'sender receiver', select: 'username profilePicture' },
+      })
+      .sort({ updatedAt: -1 });
+
+    res.status(200).json({ success: true, conversations });
+  } catch (error) {
+    console.error('Error fetching conversations:', error);
+    res.status(500).json({ success: false, message: 'Error fetching conversations', error: error.message });
+  }
+};
 
 
-//create conversation
+
+//create a conversation between two users. senderId and receiverId are clerkIDs
 const createConversation = async (req, res) => {
     try {
-        const { receiverId, productId, initialMessage } = req.body;
-        const senderId = req.user._id;
-
-        // Check if the sender and receiver are the same
-        if (senderId.toString() === receiverId,toSpring()) {
-            return res.status(400).json({ 
-                success: false,
-                message: 'Sender and receiver cannot be the same'
-            });
+        const { senderId, receiverId, productId, initialMessage } = req.body;
+        const sender = await User.findOne({ clerkUserId: senderId });
+        const receiver = await User.findOne({ clerkUserId: receiverId });
+        if (!sender || !receiver) {
+          return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        //verify if receiverId is valid
-        const receiver = await User.findById(receiverId);
-        if (!receiver) {
-            return res.status(404).json({ 
-                success: false,
-                message: 'Receiver not found'
-            });
-        }
-
-        //verify if productId is valid
         let product = null;
-        if (productId) {
-            product = await Product.findById(productId);
-            if (!product) {
-                return res.status(404).json({ success: false, message: 'Product not found' });
-            }
-        }
-        // Check if a conversation already exists between the sender and receiver
-        const existingConversationFilter = {
-            participants: { $all: [senderId, receiverId] },
-        };
-          
-        if (productId) {
-            existingConversationFilter.product = productId;
-        }
-
-        const existingConversation = await Conversation.findOne(existingConversationFilter);
-
-        if (existingConversation) {
-            // If a conversation already exists, create a new message in that conversation
-            if(initialMessage) {
-                const newMessage = new Message({
-                    conversation: existingConversation._id,
-                    sender: senderId,
-                    receiver: receiverId,
-                    content: initialMessage,
-                    product: productId || null,
-                });
-
-                await newMessage.save();
-
-                //update the last message in the conversation
-                await Conversation.findByIdAndUpdate(
-                    existingConversation._id, 
-                    { 
-                        lastMessage: newMessage._id,
-                        updatedAt: Date.now()
-                    }
-                );
-            }
-
-            return res.status(200).json({ 
-                success: true, 
-                message:'Conversation already exists',
-                conversation: existingConversation 
-            });
-            
-        }
-
-        // If no conversation exists, create a new one
-        const newConversation = new Conversation({
-            participants: [senderId, receiverId],
-            product: productId || null,
-            lastMessage: {
-                content: initialMessage,
-                sender: senderId,
-                timestamp: Date.now()
-            },
-        });
-        await newConversation.save();
-        res.status(201).json({ success: true, conversation: newConversation });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Error creating conversation', error });
+    if (productId) {
+      if (!isValidObjectId(productId)) {
+        return res.status(400).json({ success: false, message: 'Invalid product id' });
+      }
+      product = await Product.findById(productId);
+      if (!product) {
+        return res.status(404).json({ success: false, message: 'Product not found' });
+      }
     }
-}
+
+    let conversation = await Conversation.findOne({
+      participants: { $all: [sender._id, receiver._id] },
+      ...(product ? { product: product._id } : {}),
+    });
+
+    if (!conversation) {
+        conversation = await Conversation.create({
+          participants: [sender._id, receiver._id],
+          product: product ? product._id : undefined,
+        });
+      }
+  
+      if (initialMessage) {
+        const message = await Message.create({
+          conversation: conversation._id,
+          sender: sender._id,
+          receiver: receiver._id,
+          content: initialMessage,
+          product: product ? product._id : undefined,
+        });
+        conversation.lastMessage = message._id;
+        conversation.updatedAt = Date.now();
+        await conversation.save();
+    }
+
+    res.status(200).json({ success: true, conversation });
+  } catch (error) {
+    console.error('Error creating conversation:', error);
+    res.status(500).json({ success: false, message: 'Error creating conversation', error: error.message });
+  }
+};
 
 
-module.exports = {getConversations};
+
+module.exports = {getConversationsByUser, createConversation};

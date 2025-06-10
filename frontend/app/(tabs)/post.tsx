@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function CreateScreen() {
   const handleCreateProduct = () => {
-    router.push("/post/create_product");
+    router.push("/prod/create_product");
   };
 
   const handleCreatePost = () => {

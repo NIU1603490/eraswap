@@ -1,16 +1,27 @@
-import { View, Text, SafeAreaView, TextInput, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, SafeAreaView, TextInput, Image, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useClerk } from '@clerk/clerk-expo';
 import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-
-// Backend API URL for image upload (replace with your actual backend or Cloudinary URL)
+import { Dropdown } from 'react-native-element-dropdown';
+import { useLocationStore } from '@/store/location-store';
+import { useUserStore } from '@/store/user-store';
+import { Country, City, University }from '@/services/types';
 
 
 export default function ModifyProfile() {
   const { user } = useClerk();
   const router = useRouter();
+  const {
+    countries,
+    cities,
+    universities,
+    fetchCountries,
+    fetchCities,
+    fetchUniversities,
+  } = useLocationStore();
+
 
   const [fontsLoaded] = useFonts({
     'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
@@ -21,23 +32,51 @@ export default function ModifyProfile() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
-  const [address, setAddress] = useState(''); // Not used in Clerk, can be sent to backend
   const [image, setImage] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedUniversity, setSelectedUniversity] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  const { fetchUser, user: userData, updateProfile } = useUserStore();
 
   useEffect(() => {
     if (user) {
-      const fullName = user.fullName || '';
-      const [fName, lName] = fullName.split(' ');
-      setFirstName(fName || '');
-      setLastName(lName || '');
+      fetchUser(user.id);
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
       setEmail(user.emailAddresses[0]?.emailAddress || '');
       setUsername(user.username || '');
       setImage(user.imageUrl || '');
     }
   }, [user]);
+
+  useEffect(() => {
+    fetchCountries().catch(() => {});
+  }, [])
+
+  useEffect(() => {
+    if (userData) {
+      setSelectedCountry(userData.country._id);
+      setSelectedCity(userData.city._id);
+      setSelectedUniversity(userData.university._id);
+    }
+  }, [userData]);
+
+  useEffect(() => {
+    if (selectedCountry) {
+      fetchCities(selectedCountry).catch(() => {});
+    }
+  }, [selectedCountry]);
+
+  useEffect(() => {
+    if (selectedCity) {
+      fetchUniversities(selectedCity).catch(() => {});
+    }
+  }, [selectedCity]);
 
   const handleCancel = () => {
     router.push('/profile');
@@ -92,9 +131,9 @@ export default function ModifyProfile() {
 
       // Update Clerk user profile
       await user.update({
-        firstName,
-        lastName,
-        username,
+        firstName: firstName,
+        lastName: lastName,
+        username: username,
         unsafeMetadata: { imageUrl: updatedImageUrl },
       });
 
@@ -106,11 +145,17 @@ export default function ModifyProfile() {
 
       // Update password if provided
       if (password) {
-        await user.updatePassword({ newPassword: password });
+        await user.updatePassword({ newPassword: password, currentPassword: oldPassword });
       }
 
-      // Optionally: Update backend database with additional fields (e.g., address)
-      // Example: await api.patch(`/users/${user.id}`, { address });
+      await updateProfile(user?.id, {
+        firstName,
+        lastName,
+        username,
+        country: selectedCountry,
+        city: selectedCity,
+        university: selectedUniversity,
+      });
 
       Alert.alert('Success', 'Profile updated successfully');
       router.push('/profile');
@@ -128,6 +173,7 @@ export default function ModifyProfile() {
 
   return (
     <SafeAreaView style={styles.container}>
+      
       <View style={styles.header}>
         <Text style={styles.title}>Modify Profile</Text>
         <TouchableOpacity onPress={handleCancel} disabled={isSaving}>
@@ -143,6 +189,8 @@ export default function ModifyProfile() {
           <Text style={[styles.editImageText, isSaving && styles.disabledButton]}>Edit image</Text>
         </TouchableOpacity>
       </View>
+
+      <ScrollView>
 
       <View style={styles.inputContainer}>
         <Text style={styles.inputText}>First Name</Text>
@@ -190,9 +238,71 @@ export default function ModifyProfile() {
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.inputText}>Password</Text>
+        <Text style={styles.inputText}>Country</Text>
+        <Dropdown
+          style={styles.input}
+          data={countries.map(c => ({ label: c.name, value: c._id }))}
+          labelField="label"
+          valueField="value"
+          placeholder="Select country"
+          value={selectedCountry}
+          onChange={item => {
+            setSelectedCountry(item.value);
+            setSelectedCity('');
+            setSelectedUniversity('');
+          }}
+        />
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputText}>City</Text>
+        <Dropdown
+          style={styles.input}
+          data={cities.map(c => ({ label: c.name, value: c._id }))}
+          labelField="label"
+          valueField="value"
+          placeholder="Select city"
+          value={selectedCity}
+          onChange={item => {
+            setSelectedCity(item.value);
+            setSelectedUniversity('');
+          }}
+          disable={!selectedCountry}
+        />
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputText}>University</Text>
+        <Dropdown
+          style={styles.input}
+          data={universities.map(u => ({ label: u.name, value: u._id }))}
+          labelField="label"
+          valueField="value"
+          placeholder="Select university"
+          value={selectedUniversity}
+          onChange={item => setSelectedUniversity(item.value)}
+          disable={!selectedCity}
+        />
+      </View>
+
+      <Text style={styles.sectionSubtitle}> Change Password </Text>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputText}>Current Password</Text>
         <TextInput
-          placeholder="Password"
+          placeholder="Current Password"
+          value={oldPassword}
+          onChangeText={setOldPassword}
+          style={styles.input}
+          secureTextEntry
+          editable={!isSaving}
+        />
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputText}> New Password</Text>
+        <TextInput
+          placeholder="New Password"
           value={password}
           onChangeText={setPassword}
           style={styles.input}
@@ -213,17 +323,7 @@ export default function ModifyProfile() {
         />
       </View>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.inputText}>Address</Text>
-        <TextInput
-          placeholder="Address"
-          value={address}
-          onChangeText={setAddress}
-          style={styles.input}
-          editable={!isSaving}
-        />
-      </View>
-
+      <View style={styles.buttonContainer}>
       <TouchableOpacity
         style={[styles.button, isSaving && styles.disabledButtonContainer]}
         onPress={handleSave}
@@ -233,6 +333,8 @@ export default function ModifyProfile() {
           {isSaving ? 'Saving...' : 'Save'}
         </Text>
       </TouchableOpacity>
+      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -255,6 +357,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontFamily: 'PlusJakartaSans-Bold',
+  },
+  sectionSubtitle: {
+    fontSize: 18,
+    fontFamily: 'PlusJakartaSans-Bold',
+    color: '#000',
+    marginBottom: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
   },
   cancelButton: {
     fontSize: 14,
@@ -279,11 +389,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   inputContainer: {
-    marginTop: 10,
-    padding: 10,
+    marginHorizontal: 20,
+    marginVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 15,
+    gap: 10,
   },
   editImageButton: {
     marginBottom: 10,
@@ -295,33 +405,37 @@ const styles = StyleSheet.create({
     color: 'blue',
   },
   input: {
-    fontSize: 13,
+    fontSize: 15,
     fontFamily: 'PlusJakartaSans-Regular',
     marginLeft: 5,
     borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 5,
+    borderColor: '#E5E5E7',
+    borderRadius: 8,
     padding: 5,
-    width: 250,
-    height: 30,
+    width: '70%',
+    height: 40,
+    backgroundColor: '#FAFAFA',
   },
   inputText: {
-    fontSize: 13,
+    fontSize: 15,
     fontFamily: 'PlusJakartaSans-Bold',
     marginLeft: 5,
     width: 80,
   },
+  buttonContainer: {
+    padding: 16,
+  },
   button: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 20,
-    paddingVertical: 14,
+    backgroundColor: '#007AFF',
+    borderRadius: 16,
+    paddingVertical: 16,
     alignItems: 'center',
     margin: 16,
     marginTop: 20,
   },
   buttonText: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'PlusJakartaSans-Bold',
   },
 });

@@ -14,6 +14,7 @@ export default function ProductDetail() {
   const { fetchProductById, deleteProduct, isLoading: contextLoading, error: contextError, selectedProduct } = useProductStore();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isAvailable, setIsAvailable] = useState(Boolean);
   const router = useRouter();
   const { user } = useUser();
 
@@ -36,6 +37,7 @@ export default function ProductDetail() {
         try {
           const userResponse = await fetchObjectUser(selectedProduct.seller);
           setUserData(userResponse);
+          setIsAvailable(selectedProduct.status==='Available');
         } catch (error) {
           console.error('Error fetching user data:', error);
           setUserData(null);
@@ -191,7 +193,7 @@ export default function ProductDetail() {
           </Text>
           <Text style={styles.metaText}>Category: {selectedProduct.category}</Text>
           <Text style={styles.metaText}>Condition: {selectedProduct.condition}</Text>
-          <Text style={styles.metaText}>Status: {selectedProduct.status}</Text>
+          <Text style={styles.metaTextStatus}>Status: {selectedProduct.status}</Text>
           <Text style={styles.productPrice}>
             {selectedProduct.price.amount} {selectedProduct.price.currency}
           </Text>
@@ -223,7 +225,9 @@ export default function ProductDetail() {
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={styles.buyNowButton}
+                style={[styles.buyNowButton,
+                  !(isAvailable) && styles.disabledButton]}
+                disabled={!(selectedProduct.status =='Available')}
                 onPress={() =>
                   router.push({
                     pathname: `/purch/[id]`,
@@ -231,7 +235,7 @@ export default function ProductDetail() {
                   })
                 }
               >
-                <Text style={styles.buyNowButtonText}>Buy Now</Text>
+                <Text style={styles.buyNowButtonText} >Buy Now</Text>
               </TouchableOpacity>
             </>
           )}
@@ -376,6 +380,9 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginBottom: 5,
   },
+  metaTextStatus:{
+    fontFamily: 'PlusJakartaSans-Bold',
+  },
   productPrice: {
     fontSize: 18,
     fontFamily: 'PlusJakartaSans-Bold',
@@ -477,5 +484,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'PlusJakartaSans-Bold',
     color: '#EF4444',
+  },
+  disabledButton: {
+    backgroundColor: '#E5E5E7',
+  },
+  disabledButtonText: {
+    color: '#999',
   },
 });

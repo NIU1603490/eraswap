@@ -8,7 +8,8 @@ router.post('/', userController.createUser); // save a new user
 router.get('/user/:clerkUserId', userController.getUserByClerkId); // get a user by clerkUserId
 router.get('/userObject/:userId', userController.getUser); // get a user by objectId
 router.get('/favorites/:clerkUserId', userController.getFavorites); //
-router.post('/favorites/add', userController.addFavorite)
-router.delete('/favorites/remove/:productId', userController.removeFavorite)
+router.post('/favorites/add', userController.addFavorite);
+router.delete('/favorites/remove/:productId', userController.removeFavorite);
+router.patch('/:clerkUserId', userController.updateUser);
 
 module.exports = router; // Export the router for use in app.js

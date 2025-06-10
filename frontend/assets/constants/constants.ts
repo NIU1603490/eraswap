@@ -18,10 +18,11 @@ export const conditions = [
   ];
 
 export const currency = [
-    { id: "USD", name: "USD" },
     { id: "EUR", name: "EUR" },
-    { id: "GBP", name: "GBP" },
-    { id: "CAD", name: "CAD" },
+     // { id: "NOK", name: "NOK" },
+    // { id: "USD", name: "USD" },
+    // { id: "GBP", name: "GBP" },
+    // { id: "CAD", name: "CAD" },
   ];
 
 export const productStatus = [

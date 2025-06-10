@@ -16,20 +16,29 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { Dropdown } from 'react-native-element-dropdown';
-import { fetchCountries, fetchCities, fetchUniversities} from '../../services/locationService';
 import { saveUser } from '../../services/authService';
 import { Country, City, University, SignUpData, FormData } from '../../services/types';
 import { useAuth, useSignUp, useClerk } from '@clerk/clerk-expo';
 import { useForm, Controller } from 'react-hook-form';
+import { useLocationStore } from '@/store/location-store';
 import Toast from 'react-native-toast-message';
 
 
 export default function SignUp() {
   const router = useRouter();
+  const {
+    countries,
+    cities,
+    universities,
+    fetchCountries,
+    fetchCities,
+    fetchUniversities,
+  } = useLocationStore();
   const { isLoaded, signUp } = useSignUp();
   const { isSignedIn } = useAuth();
   const { setActive } = useClerk();
   const scrollViewRef = useRef<ScrollView>(null);
+
 
   console.log('isSignedIn:', isSignedIn);
 
@@ -37,7 +46,7 @@ export default function SignUp() {
     return <Redirect href="/(tabs)/home" />;
   }
 
-  // Form setup with react-hook-form
+  
   const {
     control,
     handleSubmit,
@@ -60,9 +69,7 @@ export default function SignUp() {
   });
 
   // Dropdown states
-  const [countries, setCountries] = useState<Country[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
-  const [universities, setUniversities] = useState<University[]>([]);
+
   const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null);
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -76,8 +83,7 @@ export default function SignUp() {
   useEffect(() => {
     const loadCountries = async () => {
       try {
-        const countriesData = await fetchCountries();
-        setCountries(countriesData || []);
+         await fetchCountries();
       } catch (err: any) {
         setError('Failed to load countries');
         Toast.show({ type: 'error', text1: 'Failed to load countries' });
@@ -90,15 +96,13 @@ export default function SignUp() {
   useEffect(() => {
     const loadCities = async () => {
       if (!selectedCountryId) {
-        setCities([]);
         setValue('city', '');
         setValue('university', '');
         setSelectedCityId(null);
         return;
       }
       try {
-        const citiesData = await fetchCities(selectedCountryId);
-        setCities(citiesData || []);
+        await fetchCities(selectedCountryId);
       } catch (err: any) {
         setError('Failed to load cities');
         Toast.show({ type: 'error', text1: 'Failed to load cities' });
@@ -111,13 +115,11 @@ export default function SignUp() {
   useEffect(() => {
     const loadUniversities = async () => {
       if (!selectedCityId) {
-        setUniversities([]);
         setValue('university', '');
         return;
       }
       try {
-        const universitiesData = await fetchUniversities(selectedCityId);
-        setUniversities(universitiesData || []);
+        await fetchUniversities(selectedCityId);
       } catch (err: any) {
         setError('Failed to load universities');
         Toast.show({ type: 'error', text1: 'Failed to load universities' });

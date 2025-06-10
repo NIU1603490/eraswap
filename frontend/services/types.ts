@@ -5,9 +5,9 @@ export interface UserData {
   lastName: string;
   username: string;
   email: string;
-  country: { _id: string; name: string };
-  city: { _id: string; name: string };
-  university: { _id: string; name: string };
+  country: string;
+  city: string;
+  university: string;
   profilePicture: string;
   savedProducts: string[]; // obbjectId de productos guardados
   rating: {
@@ -32,6 +32,27 @@ export interface User {
     count: number;
   }
   savedProducts: string[]; // ObjectId de productos guardados
+}
+
+export interface Message {
+  _id: string;
+  conversation: string;
+  sender: { _id: string; username: string; profilePicture: string };
+  receiver: { _id: string; username: string; profilePicture: string };
+  content: string;
+  isRead: boolean;
+  product?: { _id: string; title: string; images: string[] };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Conversation {
+  _id: string;
+  participants: { _id: string; username: string; profilePicture: string }[];
+  product?: { _id: string; title: string; images: string[] };
+  lastMessage?: Message;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Post {

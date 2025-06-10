@@ -168,7 +168,7 @@ export default function Profile() {
           keyExtractor={(item) => item._id}
           ListEmptyComponent={() => (
             <View style={styles.placeholderContent}>
-              <Text style={styles.placeholderText}>No products available</Text>
+              <Text style={styles.placeholderText}>No post available</Text>
             </View>
           )}
         />

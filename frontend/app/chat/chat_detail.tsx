@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,71 +14,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useAuth, useUser} from '@clerk/clerk-expo';
+import { Message } from '@/services/types';
+import * as chatService from '@/services/conversationService';
+import socket from '@/services/socket';
 // import { GiftedChat, IMessage } from 'react-native-gifted-chat'; // Una alternativa popular
 
-// Tipus simulats
-interface Message {
-  _id: string;
-  text: string;
-  createdAt: Date | number;
-  user: {
-    _id: string | number;
-    name?: string;
-    avatar?: string;
-  };
-  // Altres camps com image, video, system message, etc.
-}
-
-// Dades de mostra per a una conversa
-const mockMessages: Message[] = [
-  {
-    _id: 'msg7',
-    text: 'Genial, ens veiem allà!',
-    createdAt: new Date(Date.now() - 60000 * 1),
-    user: { _id: 'user_carlota', name: 'Carlota G.' }, // Missatge de l'altre usuari
-  },
-  {
-    _id: 'msg6',
-    text: 'Sí, a les 15:00 a la porta de la facultat et va bé?',
-    createdAt: new Date(Date.now() - 60000 * 2),
-    user: { _id: 'currentUser123', name: 'Jo' }, // Missatge de l'usuari actual
-  },
-  {
-    _id: 'msg5',
-    text: 'Perfecte! Podem quedar avui?',
-    createdAt: new Date(Date.now() - 60000 * 10),
-    user: { _id: 'user_carlota', name: 'Carlota G.' },
-  },
-  {
-    _id: 'msg4',
-    text: 'Hola! Encara tens disponible la cadira?',
-    createdAt: new Date(Date.now() - 60000 * 12),
-    user: { _id: 'currentUser123', name: 'Jo' },
-  },
-  {
-    _id: 'msg3',
-    text: 'Molt bé, gràcies!',
-    createdAt: new Date(Date.now() - 86400000 * 1), // Ahir
-    user: { _id: 'user_carlota', name: 'Carlota G.' },
-  },
-  {
-    _id: 'msg2',
-    text: 'El preu és negociable?',
-    createdAt: new Date(Date.now() - 86400000 * 1 - 60000 * 5),
-    user: { _id: 'currentUser123', name: 'Jo' },
-  },
-  {
-    _id: 'msg1',
-    text: 'Hola, estic interessat en el teu anunci de la cadira.',
-    createdAt: new Date(Date.now() - 86400000 * 1 - 60000 * 10),
-    user: { _id: 'user_carlota', name: 'Carlota G.' },
-  },
-];
-
-const CURRENT_USER_ID = 'currentUser123'; // ID de l'usuari actual (simulat)
 
 export default function ChatScreen() {
   const router = useRouter();
+  const user = useUser();
   const params = useLocalSearchParams<{ chatId?: string; otherUserId?: string; otherUserName?: string; otherUserProfilePicture?: string }>();
   const chatId = params.chatId || params.otherUserId; // L'ID de la conversa o de l'altre usuari
   const otherUserName = params.otherUserName || 'Chat';
@@ -90,40 +35,72 @@ export default function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    // Simula la càrrega de missatges per a aquesta conversa
-    console.log('Loading messages for chat ID:', chatId);
-    setTimeout(() => {
-      // Filtra o carrega missatges específics per a `chatId`
-      // Per ara, utilitzem els mockMessages ordenats
-      setMessages(mockMessages.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setLoading(false);
-    }, 500);
-    // En una app real: cridar a l'API per obtenir els missatges de la conversa
-    // També, subscriure's a actualitzacions en temps real (Socket.io)
+    const loadMessages = async () => {
+      try {
+        const data = await chatService.fetchMessages(chatId as string);
+        const formatted = data.map((m) => ({
+          _id: m._id,
+          text: m.content,
+          createdAt: new Date(m.createdAt),
+          user: { _id: m.sender._id, name: m.sender.username, avatar: m.sender.profilePicture },
+        }));
+        setMessages(formatted.sort((a, b) => (b.createdAt as any) - (a.createdAt as any)));
+      } catch (err) {
+        console.error('Failed to load messages', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (chatId) {
+      loadMessages();
+      socket.emit('joinConversation', chatId);
+    }
+
+    const handler = (msg: any) => {
+      if (msg.conversation === chatId) {
+        const formatted = {
+          _id: msg._id,
+          text: msg.content,
+          createdAt: new Date(msg.createdAt),
+          user: { _id: msg.sender._id, name: msg.sender.username, avatar: msg.sender.profilePicture },
+        } as Message;
+        setMessages((prev) => [formatted, ...prev]);
+      }
+    };
+    socket.on('newMessage', handler);
+
+    return () => {
+      socket.off('newMessage', handler);
+      socket.emit('leaveConversation', chatId);
+    };
   }, [chatId]);
 
-  const onSend = () => {
-    if (inputText.trim().length === 0) {
+  const onSend = async () => {
+    if (inputText.trim().length === 0 || !chatId) {
       return;
     }
-    const newMessage: Message = {
-      _id: Math.random().toString(36).substring(7), // ID aleatori per al missatge
-      text: inputText.trim(),
-      createdAt: new Date(),
-      user: { _id: CURRENT_USER_ID, name: 'Jo' }, // Usuari actual
-    };
-    setMessages(previousMessages => [newMessage, ...previousMessages]);
-    setInputText('');
-    // En una app real: enviar el missatge al servidor via API/Socket.io
-    // flatListRef.current?.scrollToOffset({ animated: true, offset: 0 });
+    try {
+      await chatService.sendMessage({
+        conversationId: chatId as string,
+        senderId: CURRENT_USER_ID,
+        receiverId: params.otherUserId as string,
+        content: inputText.trim(),
+      });
+      setInputText('');
+    } catch (err) {
+      console.error('Failed to send message', err);
+    }
   };
+
+ 
 
   if (loading) {
     return <View style={styles.centered}><ActivityIndicator size="large" color="#3D5AF1" /></View>;
   }
 
   const renderMessageItem = ({ item }: { item: Message }) => {
-    const isCurrentUser = item.user._id === CURRENT_USER_ID;
+    const isCurrentUser = item.user._id === user.id;
     return (
       <View style={[styles.messageRow, isCurrentUser ? styles.messageRowCurrentUser : styles.messageRowOtherUser]}>
         {!isCurrentUser && otherUserProfilePicture && (

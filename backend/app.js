@@ -7,6 +7,8 @@ const transactionRoutes = require('./routes/transactionRoutes.js');
 const postRoutes = require('./routes/postRoutes.js');
 const followRoutes = require('./routes/followRoutes.js');
 const imageRoutes = require('./routes/imageRoutes.js');
+const conversationRoutes = require('./routes/conversationRoutes.js');
+const messageRoutes = require('./routes/messageRoutes.js');
 
 const app = express();
 
@@ -23,6 +25,8 @@ app.use('/api/transactions', transactionRoutes); // Transaction routes
 app.use('/api/follows', followRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/images', imageRoutes);
+app.use('/api/conversations', conversationRoutes);
+app.use('/api/messages', messageRoutes);
 
 
 

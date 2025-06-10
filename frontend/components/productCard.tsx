@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
-    height: 240,
+    height: 250,
     
   },
   productImageContainer: {
@@ -112,6 +112,7 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     padding: 10,
+    gap: 3,
   },
   productName: {
     fontSize: 13,
@@ -133,6 +134,6 @@ const styles = StyleSheet.create({
   productStatus: {
     fontSize: 12,
     color: '#6B7280',
-    fontFamily: 'PlusJakartaSans-Regular',
+    fontFamily: 'PlusJakartaSans-Bold',
   },
 });

@@ -32,4 +32,28 @@ async function testPurchaseCreation() {
   }
 }
 
+async function transactionFetchTests() {
+  const buyerId = 'CLERK_BUYER_ID';
+  const sellerId = 'CLERK_SELLER_ID';
+  const transactionId = 'TRANSACTION_ID';
+  try {
+    const byId = await axios.get(`http://localhost:5000/api/transactions/${transactionId}`);
+    console.log('Transaction by ID:', byId.data);
+
+    const buyerTx = await axios.get(`http://localhost:5000/api/transactions/buyer/${buyerId}`);
+    console.log('Transactions for buyer:', buyerTx.data);
+
+    const sellerTx = await axios.get(`http://localhost:5000/api/transactions/seller/${sellerId}`);
+    console.log('Transactions for seller:', sellerTx.data);
+
+    const updateRes = await axios.put(`http://localhost:5000/api/transactions/update/${transactionId}`, {
+      status: 'Completed',
+    });
+    console.log('Update transaction:', updateRes.data);
+  } catch (error) {
+    console.error('Transaction fetch test error:', error.response ? error.response.data : error.message);
+  }
+}
+
+transactionFetchTests();
 testPurchaseCreation();

@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { useUser } from '@clerk/clerk-expo';
 import * as ImagePicker from 'expo-image-picker';
-import { categories, conditions } from '@/assets/constants/constants';
+import { categories, conditions, currency } from '@/assets/constants/constants';
 import { useProductStore } from '@/store/product-store';
 import { Product } from '@/services/types';
 
@@ -314,7 +314,7 @@ export default function ModifyProduct() {
                 placeholderTextColor="#666"
                 keyboardType="numeric"
               />
-              <Text style={styles.currency}>NOK</Text>
+              <Text style={styles.currency}> EUR </Text>
             </View>
           </View>
         </View>

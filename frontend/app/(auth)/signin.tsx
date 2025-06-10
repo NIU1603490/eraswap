@@ -47,8 +47,6 @@ export default function SignIn() {
   const [error, setError] = useState<string | null>(null);
 
 
-
-
   return (
     <LinearGradient colors={['#1E88E5', '#93BFD9', '#FFD663']} style={styles.gradient}>
       <SafeAreaView style={styles.container}>

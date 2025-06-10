@@ -184,6 +184,63 @@ const removeFavorite = async (req, res) => {
 
 }
 
+const updateUser = async (req, res) => {
+  try {
+    const { clerkUserId } = req.params;
+    console.log(clerkUserId);
+    if (!clerkUserId) {
+      return res.status(400).json({ success: false, message: 'clerkUserId is required' });
+    }
+
+    const updates = req.body;
+
+    if (updates.country) {
+      if (!isValidObjectId(updates.country)) {
+        return res.status(400).json({ success: false, message: 'Invalid country ID' });
+      }
+      const countryExists = await Country.findById(updates.country);
+      if (!countryExists) {
+        return res.status(404).json({ success: false, message: 'Country not found' });
+      }
+    }
+
+    if (updates.city) {
+      if (!isValidObjectId(updates.city)) {
+        return res.status(400).json({ success: false, message: 'Invalid city ID' });
+      }
+      const cityExists = await City.findById(updates.city);
+      if (!cityExists) {
+        return res.status(404).json({ success: false, message: 'City not found' });
+      }
+    }
+
+    if (updates.university) {
+      if (!isValidObjectId(updates.university)) {
+        return res.status(400).json({ success: false, message: 'Invalid university ID' });
+      }
+      const uniExists = await University.findById(updates.university);
+      if (!uniExists) {
+        return res.status(404).json({ success: false, message: 'University not found' });
+      }
+    }
+
+    const updatedUser = await User.findOneAndUpdate(
+      { clerkUserId },
+      updates,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.status(200).json({ success: true, user: updatedUser });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ success: false, message: 'Error updating user', error: error.message });
+  }
+};
+
 // Export the functions to be used in routes
 module.exports = {
     createUser,
@@ -192,4 +249,5 @@ module.exports = {
     getFavorites,
     addFavorite,
     removeFavorite,
+    updateUser,
 };
