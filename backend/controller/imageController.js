@@ -12,10 +12,9 @@ const uploadImage = async (req, res) => {
         folder: 'eraswap',
       });
     console.log(result);
-
-
-    res.status(201).json({ success: true, imageUrl: result.secure_url, image });
+    res.status(201).json({ success: true, imageUrl: result.secure_url });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ success: false, message: 'Image upload failed', error: error.message });
   }
 };
