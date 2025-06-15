@@ -1,5 +1,6 @@
 // src/types.ts
 export interface UserData {
+  _id: string;
   clerkUserId: string;
   firstName: string;
   lastName: string;
@@ -48,7 +49,7 @@ export interface Message {
 
 export interface Conversation {
   _id: string;
-  participants: { _id: string; username: string; profilePicture: string }[];
+  participants: User[],//  { _id: string; username: string; profilePicture: string };
   product?: { _id: string; title: string; images: string[] };
   lastMessage?: Message;
   createdAt: Date;

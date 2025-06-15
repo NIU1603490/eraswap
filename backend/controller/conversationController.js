@@ -15,7 +15,7 @@ const getConversationsByUser = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
     const conversations = await Conversation.find({ participants: user._id })
-      .populate('participants', 'username firstName lastName profilePicture')
+      .populate('participants', 'clerkUserId username firstName lastName profilePicture')
       .populate('product', 'title images')
       .populate({
         path: 'lastMessage',
@@ -34,10 +34,14 @@ const getConversationsByUser = async (req, res) => {
 
 //create a conversation between two users. senderId and receiverId are clerkIDs
 const createConversation = async (req, res) => {
+    //object id of sender and receiver
+    console.log('Create Conversation');
     try {
+        console.log(req.body);
         const { senderId, receiverId, productId, initialMessage } = req.body;
-        const sender = await User.findOne({ clerkUserId: senderId });
-        const receiver = await User.findOne({ clerkUserId: receiverId });
+        const sender = await User.findOne({ _id: senderId });
+        console.log(sender);
+        const receiver = await User.findOne({ _id: receiverId });
         if (!sender || !receiver) {
           return res.status(404).json({ success: false, message: 'User not found' });
         }
@@ -59,6 +63,7 @@ const createConversation = async (req, res) => {
     });
 
     if (!conversation) {
+      console.log('No exist conversation');
         conversation = await Conversation.create({
           participants: [sender._id, receiver._id],
           product: product ? product._id : undefined,
@@ -77,7 +82,8 @@ const createConversation = async (req, res) => {
         conversation.updatedAt = Date.now();
         await conversation.save();
     }
-
+    //return a conversation even if doesn't exist 
+    console.log(conversation);
     res.status(200).json({ success: true, conversation });
   } catch (error) {
     console.error('Error creating conversation:', error);
@@ -86,5 +92,4 @@ const createConversation = async (req, res) => {
 };
 
 
-
-module.exports = {getConversationsByUser, createConversation};
+module.exports = {getConversationsByUser, createConversation, };

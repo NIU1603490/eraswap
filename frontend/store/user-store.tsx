@@ -44,7 +44,6 @@ export const useUserStore = create<UserState>((set,get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.post('/users', userData);
-      console.log('saveUser response:', JSON.stringify(response.data, null, 2));
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to save user');
       }
@@ -89,7 +88,6 @@ export const useUserStore = create<UserState>((set,get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.get(`/users/userObject/${userId}`);
-      // console.log('fetchUser response:', JSON.stringify(response.data.user, null, 2));
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to fetch user');
       }
@@ -99,15 +97,11 @@ export const useUserStore = create<UserState>((set,get) => ({
        });
       return response.data.user;
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Error fetching user';
-      console.error('Fetch user error:', {
-        message: errorMessage,
-        status: error.response?.status,
-        data: error.response?.data,
-        requestUrl: error.config?.url,
-      });
-      set({ error: errorMessage, isLoading: false });
-      throw new Error(errorMessage);
+      console.error('Fetch user error:', error);
+      set({ error: error, isLoading: false });
+      throw new Error(error);
+    } finally {
+      set({ isLoading: false})
     }
   },
   addFavorite: async (productId: string, clerkUserId: string) => {

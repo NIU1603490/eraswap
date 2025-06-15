@@ -1,6 +1,7 @@
 import { create } from 'zustand';
+import api from '../services/api';
 import { Conversation, Message } from '@/services/types';
-import * as chatService from '@/services/conversationService';
+
 
 interface ChatState {
   conversations: Conversation[];
@@ -16,7 +17,7 @@ interface ChatState {
     content: string;
     productId?: string;
   }) => Promise<Message>;
-  createConversation: (payload: {
+  findOrCreateConversation: (payload: {
     senderId: string;
     receiverId: string;
     productId?: string;
@@ -33,8 +34,8 @@ export const useChatStore = create<ChatState>((set) => ({
   fetchConversations: async (userId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await chatService.fetchConversations(userId);
-      set({ conversations: data });
+      const res = await api.get(`/conversations/user/${userId}`);
+      set({ conversations: res.data.conversations });
     } catch (err: any) {
       console.error('Error fetching conversations:', err);
       set({ error: err.message });
@@ -46,8 +47,8 @@ export const useChatStore = create<ChatState>((set) => ({
   fetchMessages: async (conversationId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await chatService.fetchMessages(conversationId);
-      set({ messages: data });
+      const res = await api.get(`/messages/${conversationId}`);
+      set({ messages: res.data.messages });
     } catch (err: any) {
       console.error('Error fetching messages:', err);
       set({ error: err.message });
@@ -59,7 +60,8 @@ export const useChatStore = create<ChatState>((set) => ({
   sendMessage: async (payload) => {
     set({ isLoading: true, error: null });
     try {
-      const msg = await chatService.sendMessage(payload);
+      const res = await api.post('/messages', payload);
+      const msg = res.data.message;
       set((state) => ({ messages: [msg, ...state.messages] }));
       return msg;
     } catch (err: any) {
@@ -71,10 +73,11 @@ export const useChatStore = create<ChatState>((set) => ({
     }
   },
 
-  createConversation: async (payload) => {
+  findOrCreateConversation: async (payload) => {
     set({ isLoading: true, error: null });
     try {
-      const conv = await chatService.createConversation(payload);
+      const res = await api.post('/conversations/create', payload);
+      const conv = res.data.conversation;
       set((state) => ({ conversations: [conv, ...state.conversations] }));
       return conv;
     } catch (err: any) {

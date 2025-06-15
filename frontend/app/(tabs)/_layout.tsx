@@ -43,7 +43,7 @@ const TabBarWithOverlay = () => {
           headerRight: () => (
             <TouchableOpacity
               style={{ marginRight: 20 }}
-              onPress={() => router.push('/prod/chat_list')}  // Updated path
+              onPress={() => router.push('/chat/chat_list')}  // Updated path
             >
               <Ionicons name="chatbubble-outline" size={24} color="black" />
             </TouchableOpacity>

@@ -204,7 +204,7 @@ export default function CreateProduct() {
             placeholderTextColor="#666"
             keyboardType="numeric"
           />
-          <Text style={styles.currency}>NOK</Text>
+          <Text style={styles.currency}>EUR</Text>
         </View>
         <TouchableOpacity
           style={[styles.button, (!isFormValid) && styles.disabledButton]}

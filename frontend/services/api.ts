@@ -7,6 +7,8 @@ import { Platform } from 'react-native';
 //const BASE_URL = 'http://10.0.2.2:5000/api'
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+//const BASE_URL = 'https://eraswap.onrender.com/api'
+
 
 
 console.log('API Base URL:', BASE_URL);
@@ -16,7 +18,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 100000,
 });
 
 

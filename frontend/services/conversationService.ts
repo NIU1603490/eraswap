@@ -6,7 +6,7 @@ export const fetchConversations = async (userId: string): Promise<Conversation[]
   return res.data.conversations;
 };
 
-export const createConversation = async (payload: {
+export const findOrCreateConversation = async (payload: {
   senderId: string;
   receiverId: string;
   productId?: string;

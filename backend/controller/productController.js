@@ -3,6 +3,8 @@ const User = require('../models/user.js');
 //const Transaction = require('../models/transaction.js');
 
 
+
+
 //productes que no pertanyen al usuari registrat
 const getProducts = async (req, res) => {
   console.log('Fetch products')

@@ -53,11 +53,7 @@ export default function SignIn() {
         <StatusBar barStyle="light-content" />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={styles.header}>
-              <TouchableOpacity style={styles.backButton}>
-                <Ionicons name="chevron-back" size={24} color="white" />
-              </TouchableOpacity>
-            </View>
+      
 
             <View style={styles.formContainer}>
               <Text style={styles.title}>Log in</Text>

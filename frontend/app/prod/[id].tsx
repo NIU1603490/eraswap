@@ -5,18 +5,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { Product, UserData } from '@/services/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import { fetchObjectUser } from '@/services/authService';
 import { useUser } from '@clerk/clerk-expo';
 import { useProductStore } from '@/store/product-store';
+import * as chatService from '@/services/conversationService';
+import { useUserStore } from '@/store/user-store';
+import { useChatStore } from '@/store/chat-store';
 
 export default function ProductDetail() {
-  const { id } = useLocalSearchParams() as { id: string };
-  const { fetchProductById, deleteProduct, isLoading: contextLoading, error: contextError, selectedProduct } = useProductStore();
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isAvailable, setIsAvailable] = useState(Boolean);
+  const { id } = useLocalSearchParams() as { id: string }; // product id
   const router = useRouter();
   const { user } = useUser();
+
+  const { fetchProductById, deleteProduct, isLoading: productLoading, error: productError, selectedProduct } = useProductStore();
+  const { fetchObjectUser, selectedUser, isLoading, user : currentUser} = useUserStore();
+  const { findOrCreateConversation} = useChatStore();
+  
+  
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isAvailable, setIsAvailable] = useState(Boolean);
+  const [images, setImages] = useState<string[]>([]);
+  
 
   const [fontsLoaded] = useFonts({
     'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
@@ -28,6 +36,7 @@ export default function ProductDetail() {
       fetchProductById(id).catch((err) => {
         console.error('Error fetching product:', err);
       });
+      console.log(selectedProduct?.images);
     }
   }, [id, fetchProductById]);
 
@@ -35,19 +44,26 @@ export default function ProductDetail() {
     const fetchUserData = async () => {
       if (selectedProduct?.seller) {
         try {
-          const userResponse = await fetchObjectUser(selectedProduct.seller);
-          setUserData(userResponse);
+          await fetchObjectUser(selectedProduct.seller);
           setIsAvailable(selectedProduct.status==='Available');
         } catch (error) {
           console.error('Error fetching user data:', error);
-          setUserData(null);
         }
-      } else {
-        setUserData(null); // Netejar userData si no hi ha venedor
       }
     };
     fetchUserData();
   }, [selectedProduct]);
+
+
+  useEffect(() => {
+    if (selectedProduct?.images && selectedProduct?.images?.length > 0) {
+
+      setImages(selectedProduct.images);
+    } else {
+      setImages(['https://via.placeholder.com/400x300.png?text=No+Image']);
+    }
+  }, [selectedProduct]);
+
 
   const handleDeleteProduct = async () => {
     if (!user?.id) {
@@ -69,7 +85,7 @@ export default function ProductDetail() {
               Alert.alert('Success', 'Product deleted successfully');
               router.back();
             } catch (error) {
-              Alert.alert('Error', contextError || 'Failed to delete product');
+              Alert.alert('Error', productError || 'Failed to delete product');
             }
           },
         },
@@ -78,7 +94,33 @@ export default function ProductDetail() {
     );
   };
 
-  if (!fontsLoaded || contextLoading) {
+  const handleMessageUser = async() => {
+    try {
+    console.log(selectedUser?._id);
+      if (!currentUser || !selectedUser) return;
+      console.log('USER ID', currentUser._id);
+      const conversation = await findOrCreateConversation({
+        senderId: currentUser?._id,
+        receiverId: selectedUser._id,
+        productId: selectedProduct?._id,
+      });
+
+      console.log('Send a message');
+      router.push({
+        pathname: '/chat/chat_detail',
+        params: { 
+          chatId: conversation._id,
+          id: selectedProduct?._id,
+          sellerId: selectedUser?._id,
+          sellerUsername: selectedUser?.username,
+          profilePhoto: selectedUser?.profilePicture }
+        })
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  if (!fontsLoaded || productLoading || isLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -88,11 +130,11 @@ export default function ProductDetail() {
     );
   }
 
-  if (contextError || !selectedProduct || !userData) {
+  if (productError || !selectedProduct || !selectedUser) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{contextError || 'Product or seller not found'}</Text>
+          <Text style={styles.errorText}>{productError || 'Product or seller not found'}</Text>
           <TouchableOpacity style={styles.backButtonError} onPress={() => router.back()}>
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
@@ -101,9 +143,9 @@ export default function ProductDetail() {
     );
   }
 
-  const isSeller = user?.id === userData.clerkUserId;
-  const images = selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : ['https://via.placeholder.com/400x300.png?text=No+Image'];
-
+  const isSeller = user?.id === selectedUser._id;
+  
+  console.log(images);
   const renderImageItem = ({ item }: { item: string }) => (
     <Image source={{ uri: item }} style={styles.carouselImage} />
   );
@@ -166,20 +208,20 @@ export default function ProductDetail() {
             />
             <View style={styles.sellerTextContainer}>
               <Text style={styles.sellerName}>
-                {userData.firstName || 'Unknown'} {userData.lastName || 'Seller'}
+                {selectedUser.firstName || 'Unknown'} {selectedUser.lastName || 'Seller'}
               </Text>
-              <Text style={styles.selleruserName}>@{userData.username || 'unknown'}</Text>
+              <Text style={styles.selleruserName}>@{selectedUser.username || 'unknown'}</Text>
               <View style={styles.sellerRatingContainer}>
-                {[...Array(Math.floor(userData.rating.average || 0))].map((_, i) => (
+                {[...Array(Math.floor(selectedUser.rating.average || 0))].map((_, i) => (
                   <Ionicons key={`full-${i}`} name="star" size={16} color="#F59E0B" />
                 ))}
-                {userData.rating.average % 1 !== 0 && (
+                {selectedUser.rating.average % 1 !== 0 && (
                   <Ionicons name="star-half" size={16} color="#F59E0B" />
                 )}
-                {[...Array(5 - Math.ceil(userData.rating.average || 0))].map((_, i) => (
+                {[...Array(5 - Math.ceil(selectedUser.rating.average || 0))].map((_, i) => (
                   <Ionicons key={`empty-${i}`} name="star-outline" size={16} color="#F59E0B" />
                 ))}
-                <Text style={styles.sellerReviews}>({userData.rating.count || 0})</Text>
+                <Text style={styles.sellerReviews}>({selectedUser.rating.count || 0})</Text>
               </View>
             </View>
           </View>
@@ -220,7 +262,8 @@ export default function ProductDetail() {
             </>
           ) : (
             <>
-              <TouchableOpacity style={styles.sendMessageButton} onPress={() => router.push('/chat/chat_detail')}>
+              <TouchableOpacity style={styles.sendMessageButton} 
+                onPress={handleMessageUser}>
                 <Text style={styles.sendMessageButtonText}>Send Message</Text>
               </TouchableOpacity>
               
@@ -231,7 +274,7 @@ export default function ProductDetail() {
                 onPress={() =>
                   router.push({
                     pathname: `/purch/[id]`,
-                    params: { id: selectedProduct._id, sellerId: userData.clerkUserId },
+                    params: { id: selectedProduct._id, sellerId: selectedUser.clerkUserId },
                   })
                 }
               >

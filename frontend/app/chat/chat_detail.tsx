@@ -14,100 +14,117 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { useAuth, useUser} from '@clerk/clerk-expo';
+import { useUser} from '@clerk/clerk-expo';
 import { Message } from '@/services/types';
-import * as chatService from '@/services/conversationService';
+// import * as chatService from '@/services/conversationService';
 import socket from '@/services/socket';
-// import { GiftedChat, IMessage } from 'react-native-gifted-chat'; // Una alternativa popular
+import { useUserStore } from '@/store/user-store';
+import { useChatStore } from '@/store/chat-store';
+
+
 
 
 export default function ChatScreen() {
   const router = useRouter();
-  const user = useUser();
-  const params = useLocalSearchParams<{ chatId?: string; otherUserId?: string; otherUserName?: string; otherUserProfilePicture?: string }>();
-  const chatId = params.chatId || params.otherUserId; // L'ID de la conversa o de l'altre usuari
-  const otherUserName = params.otherUserName || 'Chat';
-  const otherUserProfilePicture = params.otherUserProfilePicture;
+  const { user } = useUser();
+  const { user: currentUser, fetchUser } = useUserStore();
+  const { fetchMessages, sendMessage, messages } = useChatStore();
+  const params = useLocalSearchParams<{ id: string; chatId: string; sellerId?: string; sellerUsername?: string; profilePhoto?: string;}>();
+  const otherUserName = params.sellerUsername;
+  const otherUserProfilePicture = params.profilePhoto;
+  const otherUserId = params.sellerId;
+  const chatId = params.chatId;
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  console.log('CHAT DETAIL');
+  console.log(params);
+  console.log(otherUserName);
+  console.log(otherUserProfilePicture);
+  console.log(otherUserId);
+  console.log(chatId);
+
+  // const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
+    console.log(user?.id);
+    if (user?.id) {
+      fetchUser(user.id);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
     const loadMessages = async () => {
+      if (!chatId) return;
+      setLoading(true);
       try {
-        const data = await chatService.fetchMessages(chatId as string);
-        const formatted = data.map((m) => ({
-          _id: m._id,
-          text: m.content,
+        await fetchMessages(chatId as string);
+        const formatted = messages.map((m) => ({
+          ...m,
           createdAt: new Date(m.createdAt),
-          user: { _id: m.sender._id, name: m.sender.username, avatar: m.sender.profilePicture },
+          updatedAt: new Date(m.updatedAt),
         }));
-        setMessages(formatted.sort((a, b) => (b.createdAt as any) - (a.createdAt as any)));
+        // setMessages(formatted.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()));
       } catch (err) {
         console.error('Failed to load messages', err);
       } finally {
         setLoading(false);
       }
     };
-
-    if (chatId) {
-      loadMessages();
-      socket.emit('joinConversation', chatId);
-    }
-
-    const handler = (msg: any) => {
-      if (msg.conversation === chatId) {
-        const formatted = {
-          _id: msg._id,
-          text: msg.content,
-          createdAt: new Date(msg.createdAt),
-          user: { _id: msg.sender._id, name: msg.sender.username, avatar: msg.sender.profilePicture },
-        } as Message;
-        setMessages((prev) => [formatted, ...prev]);
-      }
-    };
-    socket.on('newMessage', handler);
-
-    return () => {
-      socket.off('newMessage', handler);
-      socket.emit('leaveConversation', chatId);
-    };
+    loadMessages();
   }, [chatId]);
-
+  
   const onSend = async () => {
-    if (inputText.trim().length === 0 || !chatId) {
-      return;
-    }
+    if (inputText.trim().length === 0) return;
     try {
-      await chatService.sendMessage({
-        conversationId: chatId as string,
-        senderId: CURRENT_USER_ID,
-        receiverId: params.otherUserId as string,
+      console.log(user?.id);
+      console.log(params.chatId);
+      console.log(params.sellerId);
+      if (!user?.id || !params.chatId || !params.sellerId) return;
+
+      console.log('send');
+      await sendMessage({
+        conversationId: params.chatId,
+        senderId: user.id,
+        receiverId: params.sellerId,
         content: inputText.trim(),
       });
+  
       setInputText('');
+      // Reload messages after sending
+      await fetchMessages(chatId);
+      const formatted = messages.map((m) => ({
+        ...m,
+        createdAt: new Date(m.createdAt),
+        updatedAt: new Date(m.updatedAt),
+      }));
+      // setMessages(formatted.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()));
+      
+      // Scroll to bottom
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+  
     } catch (err) {
       console.error('Failed to send message', err);
     }
   };
-
- 
+  
 
   if (loading) {
     return <View style={styles.centered}><ActivityIndicator size="large" color="#3D5AF1" /></View>;
   }
 
   const renderMessageItem = ({ item }: { item: Message }) => {
-    const isCurrentUser = item.user._id === user.id;
+    const isCurrentUser = item.sender._id === currentUser?._id;
     return (
       <View style={[styles.messageRow, isCurrentUser ? styles.messageRowCurrentUser : styles.messageRowOtherUser]}>
         {!isCurrentUser && otherUserProfilePicture && (
           <Image source={{ uri: otherUserProfilePicture }} style={styles.avatarSmall} />
         )}
         <View style={[styles.messageBubble, isCurrentUser ? styles.messageBubbleCurrentUser : styles.messageBubbleOtherUser]}>
-          <Text style={isCurrentUser ? styles.messageTextCurrentUser : styles.messageTextOtherUser}>{item.text}</Text>
+          <Text style={isCurrentUser ? styles.messageTextCurrentUser : styles.messageTextOtherUser}>{item.content}</Text>
           <Text style={styles.messageTimestamp}>{new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
         </View>
       </View>
@@ -116,25 +133,19 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <Stack.Screen 
-        options={{
-          headerShown: true,
-          header: () => (
             <View style={styles.customHeader}>
               <TouchableOpacity onPress={() => router.back()} style={styles.headerBackButton}>
                 <Ionicons name="arrow-back" size={24} color="#1F2937" />
               </TouchableOpacity>
-              {otherUserProfilePicture && (
-                <Image source={{ uri: otherUserProfilePicture }} style={styles.headerAvatar} />
+              {params.profilePhoto && (
+                <Image source={{ uri: params.profilePhoto }} style={styles.headerAvatar} />
               )}
               <Text style={styles.headerTitle} numberOfLines={1}>{otherUserName}</Text>
               <TouchableOpacity style={styles.headerOptionsButton} onPress={() => console.log('Chat options')}>
                 <Ionicons name="ellipsis-vertical" size={22} color="#1F2937" />
               </TouchableOpacity>
             </View>
-          ),
-        }}
-      />
+        
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingContainer}
@@ -170,6 +181,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    paddingTop: Platform.OS === 'ios' ? 40 : 10
   },
   keyboardAvoidingContainer: {
     flex: 1,
@@ -188,7 +200,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
-    // paddingTop: Platform.OS === 'ios' ? 40 : 10, // Ajust per a la barra d'estat si no s'usa SafeAreaView per al header
   },
   headerBackButton: {
     padding: 5,

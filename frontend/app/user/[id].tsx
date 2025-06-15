@@ -7,9 +7,11 @@ import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
 import ProductCard from '@/components/productCard';
+import PostCard from '@/components/postCard';
 import { useUserStore } from '@/store/user-store';
 import { useProductStore } from '@/store/product-store';
 import { useFollowStore } from '@/store/follow-store';
+import { usePostStore } from '@/store/post-store';
 import { User } from '@/services/types';
 
 export default function OtherProfile() {
@@ -18,6 +20,7 @@ export default function OtherProfile() {
   const { user } = useUser();
   const { fetchObjectUser, fetchUser, user: current, selectedUser} = useUserStore();
   const { fetchProductsByClerkId, userProducts } = useProductStore();
+  const { fetchPostsByClerkId, userPosts } = usePostStore();
   const { followers, following, fetchFollowers, fetchFollowing, followUser, unfollowUser } = useFollowStore();
 
   const [profileData, setProfileData] = useState<User | null>(null);
@@ -34,12 +37,25 @@ export default function OtherProfile() {
 
   useEffect(() => {
     const loadData = async () => {
-      if (!id) return;
+      setLoading(true);
+      
+      
+      if (!id) 
+        return;
       try {
-        setLoading(true);
+        if (user?.id) {
+          const myData = await fetchUser(user.id);
+          setCurrentUser(myData);
+          if(id == myData?._id){
+            router.push('/(tabs)/profile');
+          }
+        }
         const profile = await fetchObjectUser(id as string);
         setProfileData(profile);
+
         await fetchProductsByClerkId(profile.clerkUserId);
+        await fetchPostsByClerkId(profile.clerkUserId);
+
         await Promise.all([fetchFollowers(id as string), fetchFollowing(id as string)]);
         if (user?.id) {
           const myData = await fetchUser(user.id);
@@ -98,6 +114,7 @@ export default function OtherProfile() {
 
   return (
     <SafeAreaView>
+      <View style={styles.container}>
       <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#1F2937" />
@@ -171,19 +188,52 @@ export default function OtherProfile() {
           )}
         />
       )}
+
+      {/* Render Post */}
+      {selectedTab === 'Post' && (
+        <FlatList
+          style={styles.postContainer}
+          data={userPosts[user?.id || '']}
+          renderItem={({ item }) => (
+            <TouchableOpacity>
+              <PostCard
+                post={item}
+                onLikePress={() => {}}
+                onProfilePress={() => {}}
+                onPostDetailPress={() => {}}
+              />
+            </TouchableOpacity>
+
+          )}
+          keyExtractor={(item) => item._id}
+          ListEmptyComponent={() => (
+            <View style={styles.placeholderContent}>
+              <Text style={styles.placeholderText}>No post available</Text>
+            </View>
+          )}
+        />
+      )}
+    </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    // flex: 1,
+    backgroundColor: '#fff',
+  },
   header: {
     flexDirection: 'row',
     paddingHorizontal: 15,
     paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   profileContainer: {
+    marginTop: 10,
     padding: 10,
-    alignItems: 'center',
+    alignItems: 'center'
   },
   profileImage: {
     width: 130,
@@ -252,8 +302,8 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    // borderBottomWidth: 1,
+    // borderBottomColor: '#f0f0f0',
     marginHorizontal: 15,
     marginTop: 10,
   },
@@ -279,6 +329,9 @@ const styles = StyleSheet.create({
   productRow: {
     justifyContent: 'space-between',
     paddingHorizontal: 15,
+  },
+  postContainer: {
+    marginTop: 10,
   },
   placeholderContent: {
     flex: 1,

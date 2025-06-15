@@ -9,6 +9,7 @@ const followRoutes = require('./routes/followRoutes.js');
 const imageRoutes = require('./routes/imageRoutes.js');
 const conversationRoutes = require('./routes/conversationRoutes.js');
 const messageRoutes = require('./routes/messageRoutes.js');
+const aiRoutes = require('./routes/aiRoutes.js');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/ai', aiRoutes);
 
 
 

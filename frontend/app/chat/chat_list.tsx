@@ -1,158 +1,122 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
-import { useContext } from 'react';
+import { useRouter } from 'expo-router';
+import { useUser } from '@clerk/clerk-expo';
+import { useTheme } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-
-//import conversationService from '../../services/conversationService';
+import { Conversation } from '@/services/types';
+import { useChatStore } from '@/store/chat-store';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChatListScreen() {
+  const router = useRouter();
+  const { user } = useUser();
+  const theme = useTheme();
+
+  const { conversations, fetchConversations }= useChatStore();
+
   const [loading, setLoading] = useState(true);
-  const [conversations, setConversations] = useState([]);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
-//   useEffect(() => {
-//     fetchConversations();
-
-//     // Actualizar la lista cuando la pantalla obtiene el foco
-//     const unsubscribe = navigation.addListener('focus', () => {
-//       fetchConversations();
-//     });
-
-//     return unsubscribe;
-//   }, [navigation]);
-
-  const fetchConversations = async () => {
+  const getConversations = async () => {
+    if (!user?.id) return;
     try {
       setLoading(true);
       setError(null);
-
-      const response = await getConversations();
-      setConversations(response.conversations);
+      await fetchConversations(user.id);
     } catch (error) {
-      console.error('Error al cargar conversaciones:', error);
-      setError('No se pudieron cargar las conversaciones. Por favor, inténtalo de nuevo más tarde.');
+      console.error('Error to load conversaions:', error);
+      setError('No se pudieron cargar las conversaciones. Please, try it again later.');
     } finally {
       setLoading(false);
     }
   };
 
-  const renderConversationItem = ({ item }) => {
-    // Determinar el otro participante (no el usuario actual)
-    const otherParticipant = item.participants.find(
-      participant => participant._id !== user._id
-    );
+  useEffect(() => {
+    getConversations();
+  }, [user?.id]);
 
-    // Determinar si hay mensajes no leídos
-    const hasUnreadMessages = item.unreadCount > 0;
+  const renderConversationItem = ({ item }: { item: Conversation }) => {
+    const other = item.participants.find((p) => p.clerkUserId!== user?.id);
+    // console.log('other',other);
+    if (!other) return null;
 
     return (
       <TouchableOpacity
-        style={[
-          styles.conversationItem,
-          { backgroundColor: theme.colors.card }
-        ]}
-        onPress={() => navigation.navigate('Chat', {
-          conversationId: item._id,
-          name: otherParticipant.name,
-          productId: item.product?._id,
-          productTitle: item.product?.title
-        })}
+      style={styles.conversationItem}
+      onPress={() =>
+        router.push({
+          pathname: '/chat/chat_detail',
+          params: {
+            chatId: item._id,
+            id: item.product?._id,
+            sellerId: other.clerkUserId, 
+            sellerUsername: other.username,
+            profilePhoto: other.profilePicture,
+          },
+        })
+      }
       >
-        <Image
-          source={{ uri: otherParticipant.profilePicture }}
-          style={styles.avatar}
-        />
-        
-        {hasUnreadMessages && (
-          <View style={[styles.unreadBadge, { backgroundColor: theme.colors.primary }]}>
-            <Text style={styles.unreadBadgeText}>{item.unreadCount}</Text>
-          </View>
-        )}
+      <Image source={{ uri: other.profilePicture }} style={styles.avatar} />
         
         <View style={styles.conversationInfo}>
           <View style={styles.conversationHeader}>
-            <Text 
-              style={[
-                styles.participantName, 
-                { color: theme.colors.text },
-                hasUnreadMessages && styles.boldText
-              ]}
-              numberOfLines={1}
-            >
-              {otherParticipant.name}
+            <Text style={[styles.participantName]} numberOfLines={1}>
+            {other.username}
             </Text>
-            <Text 
-              style={[
-                styles.timeText, 
-                { color: theme.colors.gray },
-                hasUnreadMessages && styles.boldText
-              ]}
-            >
-              {formatTime(item.lastMessage.timestamp)}
-            </Text>
-          </View>
-          
-          <View style={styles.messagePreviewContainer}>
-            {item.product && (
-              <Text 
-                style={[
-                  styles.productText, 
-                  { color: theme.colors.primary },
-                  hasUnreadMessages && styles.boldText
-                ]}
-                numberOfLines={1}
-              >
-                {item.product.title}
-              </Text>
+
+          {item.lastMessage && (
+              <Text style={[styles.timeText]}> {formatTime(item.lastMessage.createdAt)} </Text>
             )}
-            
-            <Text 
-              style={[
-                styles.messagePreview, 
-                { color: hasUnreadMessages ? theme.colors.text : theme.colors.gray },
-                hasUnreadMessages && styles.boldText
-              ]}
-              numberOfLines={1}
-            >
-              {item.lastMessage.sender === user._id ? 'Tú: ' : ''}{item.lastMessage.content}
-            </Text>
+        
           </View>
+          {item.product && (
+            <Text style={[styles.productText, { color: theme.colors.primary }]} numberOfLines={1}>
+              {item.product.title}
+            </Text>
+          )}
+          {item.lastMessage && (
+            <Text style={[styles.messagePreview]} numberOfLines={1}>
+              {item.lastMessage.sender._id === user?.id ? 'You ' : ''}
+              {item.lastMessage.content}
+            </Text>
+          )}
         </View>
       </TouchableOpacity>
     );
   };
 
   // Función para formatear la hora del último mensaje
-  const formatTime = (timestamp) => {
+  const formatTime = (timestamp: Date) => {
     const date = new Date(timestamp);
     const now = new Date();
     
-    // Si es hoy, mostrar solo la hora
+    // if is today, show only the hour
     if (date.toDateString() === now.toDateString()) {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
     
-    // Si es esta semana, mostrar el día
-    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    // if its this week the day
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays < 7) {
-      const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       return days[date.getDay()];
     }
     
-    // Si es este año, mostrar día y mes
+    //if is this year only the year
     if (date.getFullYear() === now.getFullYear()) {
       return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
     }
     
-    // Si es otro año, mostrar día, mes y año
-    return date.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+    // if its other year, showe only month and year
+    return date.toLocaleDateString([], { day: 'numeric', month: 'numeric', year: 'numeric' });
   };
 
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={[styles.loadingText, { color: theme.colors.text }]}>Cargando conversaciones...</Text>
+        <Text style={[styles.loadingText, { color: theme.colors.text }]}> Loading conversations...</Text>
       </View>
     );
   }
@@ -160,11 +124,11 @@ export default function ChatListScreen() {
   if (error) {
     return (
       <View style={[styles.errorContainer, { backgroundColor: theme.colors.background }]}>
-        <Ionicons name="alert-circle-outline" size={48} color={theme.colors.error} />
+        <Ionicons name="alert-circle-outline" size={48} />
         <Text style={[styles.errorText, { color: theme.colors.text }]}>{error}</Text>
         <TouchableOpacity
           style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
-          onPress={fetchConversations}
+          onPress={getConversations}
         >
           <Text style={styles.retryButtonText}>Reintentar</Text>
         </TouchableOpacity>
@@ -175,16 +139,16 @@ export default function ChatListScreen() {
   if (conversations.length === 0) {
     return (
       <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
-        <Ionicons name="chatbubbles-outline" size={64} color={theme.colors.gray} />
+        <Ionicons name="chatbubbles-outline" size={64} />
         <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
-          No tienes conversaciones
+          There are no conversations
         </Text>
-        <Text style={[styles.emptySubtitle, { color: theme.colors.gray }]}>
+        <Text style={[styles.emptySubtitle]}>
           Cuando contactes con un vendedor, aparecerá aquí
         </Text>
         <TouchableOpacity
           style={[styles.exploreButton, { backgroundColor: theme.colors.primary }]}
-          onPress={() => navigation.navigate('Explore')}
+          onPress={() => router.push('/(tabs)/home')}
         >
           <Text style={styles.exploreButtonText}>Explorar productos</Text>
         </TouchableOpacity>
@@ -193,22 +157,52 @@ export default function ChatListScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+      <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#1F2937" />
+      </TouchableOpacity>
+
+      <View style={styles.center}>
+        <Text style={styles.headerTitle}> Chats </Text>
+      </View>
+
+      
+
+      </View>
+    <View>
       <FlatList
         data={conversations}
         renderItem={renderConversationItem}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContent}
-        onRefresh={fetchConversations}
+        onRefresh={getConversations}
         refreshing={loading}
       />
     </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header:{
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle:{
+    fontSize: 18,
+    fontFamily: 'PlusJakartaSans-Bold',
   },
   listContent: {
     paddingVertical: 10,
@@ -278,6 +272,12 @@ const styles = StyleSheet.create({
     marginVertical: 5,
     borderRadius: 12,
     position: 'relative',
+    backgroundColor: '#F9FAFB',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   avatar: {
     width: 50,
@@ -313,9 +313,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     flex: 1,
     marginRight: 10,
+    fontFamily: 'PlusJakartaSans-Bold',
   },
   timeText: {
     fontSize: 12,
+    fontFamily: 'PlusJakartaSans-Regular',
   },
   messagePreviewContainer: {
     flex: 1,

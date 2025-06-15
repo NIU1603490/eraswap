@@ -14,8 +14,8 @@ const getMessagesByConversation = async (req, res) => {
 
     const messages = await Message.find({ conversation: conversationId })
       .sort({ createdAt: -1 })
-      .populate('sender', 'username profilePicture')
-      .populate('receiver', 'username profilePicture')
+      .populate('sender', 'clerkUserId username profilePicture')
+      .populate('receiver', 'clerkUserId username profilePicture')
       .populate('product', 'title images');
 
     res.status(200).json({ success: true, messages });
@@ -29,6 +29,7 @@ const getMessagesByConversation = async (req, res) => {
 const sendMessage = async (req, res) => {
   try {
     const { conversationId, senderId, receiverId, content, productId } = req.body;
+    console.log(req.body);
     if (!conversationId || !senderId || !receiverId || !content) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
