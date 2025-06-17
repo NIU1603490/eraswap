@@ -15,17 +15,45 @@ interface Props {
   post: Post;
   onLikePress: (postId: string, liked: boolean) => void;
   onProfilePress: (userId: string) => void;
-  onPostDetailPress: (postId: string) => void;
 }
 
-const PostCard = memo(({ post, onLikePress, onProfilePress, onPostDetailPress }: Props) => (
+const formatTime = (timestamp: Date) => {
+  console.log(timestamp)
+  const date = new Date(timestamp);
+  const now = new Date(); 
+  
+  // if is today, show only the hour
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  
+  // if its this week the day
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 7) {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days[date.getDay()];
+  }
+  
+  //if is this year only the year
+  if (date.getFullYear() === now.getFullYear()) {
+    return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+  }
+  
+  // if its other year, showe only month and year
+  return date.toLocaleDateString([], { day: 'numeric', month: 'numeric', year: 'numeric' });
+
+}
+
+const PostCard = memo(({ post, onLikePress, onProfilePress }: Props) => (
+
+  
   
   <View style={styles.postCard}>
     <TouchableOpacity style={styles.authorSection} onPress={() => onProfilePress(post.author._id)}>
       <Image source={{ uri: post.author.profilePicture }} style={styles.authorAvatar} />
       <View>
         <Text style={styles.authorName}>{post.author.username}</Text>
-        {/* <Text style={styles.postTimestamp}>{post.createdAt.getDate()}</Text> */}
+        <Text style={styles.postTimestamp}>{formatTime(post.createdAt)}</Text>
       </View>
     </TouchableOpacity>
 

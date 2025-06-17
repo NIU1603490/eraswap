@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { useAuth } from '@clerk/clerk-expo';
 import { Product, ProductData } from '@/services/types';
 import api from '@/services/api';
-
+const { getToken } = useAuth();
 
 interface ProductState {
   products: Product[];
@@ -51,7 +51,12 @@ export const useProductStore = create<ProductState>((set) => ({
   fetchProductsByClerkId: async (clerkUserId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.get(`/products/my/${clerkUserId}`);
+      const token = await getToken();
+      const response = await api.get(`/products/my/${clerkUserId}`,{
+        headers: {
+          Authorization: `Bearer ${token}`, // send token
+        },
+      });
       set({  userProducts: response.data.products || [], isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
