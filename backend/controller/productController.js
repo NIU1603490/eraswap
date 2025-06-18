@@ -23,7 +23,7 @@ const getProducts = async (req, res) => {
       .populate('location.city', 'name')
       .populate('location.country', 'name');
       
-      console.log('Fetched all products:', products);
+      // console.log('Fetched all products:', products);
       res.status(200).json(products);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching products', error });

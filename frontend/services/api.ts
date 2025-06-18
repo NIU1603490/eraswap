@@ -22,20 +22,14 @@ const api = axios.create({
 });
 
 
-
 // // Add Clerk token for authentication
-// api.interceptors.request.use(async (config) => {
-//   try {
-//     const { getToken } = require('@clerk/clerk-expo').useAuth();
-//     const token = await getToken();
-//     if (token) {
-//       config.headers.Authorization = `Bearer ${token}`;
-//     }
-//   } catch (err) {
-//     console.error('Failed to attach Clerk token:', err);
-//   }
-//   return config;
-// });
+export function setAuthToken(token: string | null) {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+  }
+}
 
 // Basic error handling
 api.interceptors.response.use(

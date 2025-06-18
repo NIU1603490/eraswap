@@ -137,7 +137,6 @@ export default function SignUp() {
   const onSignUp = async (data: SignUpData) => {
     if (!isLoaded) {
       setError('Authentication service not loaded.');
-      Toast.show({ type: 'error', text1: 'Authentication service not loaded' });
       return;
     }
     setIsLoading(true);
@@ -157,8 +156,6 @@ export default function SignUp() {
         throw new Error('User ID is missing from Clerk response');
       }
 
-      console.log('Clerk user ID:', result.createdUserId);
-
       // Save user to MongoDB
       await saveUser({
         clerkUserId: result.createdUserId,
@@ -173,16 +170,13 @@ export default function SignUp() {
 
       // Handle signup status
       if (result.status === 'complete') {
-        setActive({ session: result.createdSessionId });
+        await setActive({ session: result.createdSessionId });
         console.log('Sign-up successful! User is signed in.');
-        Toast.show({ type: 'success', text1: 'Sign-up successful!' });
         router.push('/(tabs)/home');
       }
     } catch (error: any) {
-      const errorMessage = error.errors?.[0]?.message || error.message || 'Failed to sign up';
       console.error('Signup error:', error);
-      setError(errorMessage);
-      Toast.show({ type: 'error', text1: errorMessage });
+      setError(error);
     } finally {
       setIsLoading(false);
     }

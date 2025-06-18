@@ -3,6 +3,7 @@ const Country = require('../models/country');
 const City = require('../models/city');
 const University = require('../models/university');
 const Product = require('../models/product');
+const { getAuth } = require('@clerk/express');
 
 const { isValidObjectId } = require('mongoose');
 
@@ -62,6 +63,9 @@ const createUser = async (req, res) => {
 // router.get('/user/:clerkUserId', userController.getUser); // get a user by clerkUserId
 const getUserByClerkId = async (req, res) => {
     try {
+      const { userId, sessionId } = getAuth(req);
+      console.log('user id', userId);
+      console.log('session id', sessionId);
         const { clerkUserId } = req.params;
         if (!clerkUserId) {
             return res.status(400).json({ success: false, message: 'clerkUserId is required' });

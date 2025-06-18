@@ -98,7 +98,7 @@ export default function Feed() {
             post={item}
             onLikePress={handleLikePress}
             onProfilePress={navigateToUserProfile}
-            onPostDetailPress={navigateToPostDetail}
+            // onPostDetailPress={navigateToPostDetail}
           />
         )}
         keyExtractor={(item) => item._id}

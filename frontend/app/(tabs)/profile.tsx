@@ -160,7 +160,7 @@ export default function Profile() {
                 post={item}
                 onLikePress={() => {}}
                 onProfilePress={() => {}}
-                onPostDetailPress={() => {}}
+                // onPostDetailPress={() => {}}
               />
             </TouchableOpacity>
 
