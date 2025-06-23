@@ -19,10 +19,11 @@ import { Product } from '@/services/types';
 import { useProductStore } from '@/store/product-store';
 import { useUserStore } from '@/store/user-store';
 import { categories } from '@/assets/constants/constants';
+import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 export default function Home() {
   const { user } = useUser();
-  const { fetchUser, user : USER } = useUserStore();
+  const { fetchUser, user: USER } = useUserStore();
   const { isSignedIn, isLoaded } = useAuth();
   const [fontsLoaded] = useFonts({
     'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
@@ -33,14 +34,14 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    if(user?.id) {
+    if (user?.id) {
       fetchProducts(user.id);
       fetchUser(user.id);
     }
-      
+
   }, [fetchProducts, fetchUser]);
 
-  if (!isLoaded || !fontsLoaded) {
+  if (!isLoaded || !fontsLoaded || isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -69,7 +70,7 @@ export default function Home() {
         </View>
       </View>
 
-      
+
       {/*Search bar*/}
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="gray" style={styles.searchIcon} />
@@ -117,20 +118,10 @@ export default function Home() {
         keyExtractor={(item) => item._id}
         numColumns={2}
         columnWrapperStyle={styles.productRow}
-        ListEmptyComponent={() =>
-          isLoading ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <ActivityIndicator size="large" color="#0000ff" />
+        ListEmptyComponent={
+            <View style={HS.emptyContainer}>
+              <Text style={HS.emptyTitle}>No products available</Text>
             </View>
-          ) : error ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={styles.noProductsText}>Error: {error}</Text>
-            </View>
-          ) : (
-            <View>
-              <Text style={styles.noProductsText}>No products available</Text>
-            </View>
-          )
         }
       />
     </SafeAreaView>
@@ -204,6 +195,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   productRow: {
+    marginTop: 10,
     justifyContent: 'space-between',
     paddingHorizontal: 15,
   },
@@ -212,12 +204,5 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 40,
     backgroundColor: '#F3F4F6'
-  },
-  noProductsText: {
-    marginTop: 30,
-    fontFamily: 'PlusJakartaSans-Regular',
-    fontSize: 14,
-    color: 'gray',
-    textAlign: 'center',
   },
 });

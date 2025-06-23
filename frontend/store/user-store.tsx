@@ -8,6 +8,7 @@ interface UserState {
   selectedUser: User | null;
   isLoading: boolean;
   error: string | null;
+  favoriteProducts: Product[] | null;
   updateProfile: (clerkUserId: string, updates: Partial<UserData>) => Promise<void>;
   saveUser: (userData: any) => Promise<any>;
   fetchUser: (clerkUserId: string) => Promise<User>;
@@ -15,19 +16,20 @@ interface UserState {
   addFavorite: (productId: string, clerkUserId: string) => Promise<void>;
   removeFavorite: (productId: string, clerkUserId: string) => Promise<void>;
   isFavorite: (productId: string) => boolean;
-  // fetchFavoriteProducts: () => Promise<void>;
+  fetchFavoriteProducts: (clerkUserId: string) => Promise<void>;
 }
 
-export const useUserStore = create<UserState>((set,get) => ({
+export const useUserStore = create<UserState>((set, get) => ({
   user: null,
   isLoading: false,
   error: null,
   selectedUser: null,
+  favoriteProducts: [],
 
   updateProfile: async (clerkUserId: string, updates: Partial<UserData>) => {
     set({ isLoading: true, error: null });
     try {
-    
+
       const response = await api.patch(`/users/${clerkUserId}`, updates);
 
       set((state) => ({
@@ -71,12 +73,13 @@ export const useUserStore = create<UserState>((set,get) => ({
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to fetch user');
       }
-      set({ 
+      set({
         isLoading: false,
-        user:  {
+        user: {
           ...response.data.user,
           savedProducts: response.data.user?.savedProducts || [],
-        }});
+        }
+      });
       return response.data.user;
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
@@ -91,23 +94,23 @@ export const useUserStore = create<UserState>((set,get) => ({
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to fetch user');
       }
-      set({ 
+      set({
         isLoading: false,
-        selectedUser: {...response.data.user},
-       });
+        selectedUser: { ...response.data.user },
+      });
       return response.data.user;
     } catch (error: any) {
       console.error('Fetch user error:', error);
       set({ error: error, isLoading: false });
       throw new Error(error);
     } finally {
-      set({ isLoading: false})
+      set({ isLoading: false })
     }
   },
   addFavorite: async (productId: string, clerkUserId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post('/users/favorites/add', { productId, userId: clerkUserId });
+      const response = await api.post('/users/favorites/add', { productId, clerkUserId });
       if (response.data.success) {
         set((state) => {
           const user = state.user;
@@ -132,9 +135,9 @@ export const useUserStore = create<UserState>((set,get) => ({
   removeFavorite: async (productId: string, clerkUserId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.delete(`/favorites/remove/${productId}`, {
-        data: { userId: clerkUserId },
-      });
+      // data should be sent in the body for DELETE requests
+      // This is a workaround since some APIs expect data in the body for DELETE requests
+      const response = await api.delete('/users/favorites/remove', { data: { productId, clerkUserId } });
       if (response.data.success) {
         set((state) => {
           const user = state.user;
@@ -159,23 +162,21 @@ export const useUserStore = create<UserState>((set,get) => ({
   isFavorite: (productId: string) => {
     const user = get().user;
     return (user?.savedProducts || []).some((p: string) => p === productId);
-    
+
   },
 
-  // fetchFavoriteProducts: async () => {
-  //   set({ isLoading: true, error: null });
-  //   try {
-  //     const { fetchProducts } = useProductStore();
-  //     await fetchProducts(); // Carrega tots els productes
-  //     const user = get().user;
-  //     if (user?.savedProducts) {
-  //       // Aquí pots filtrar els productes favorits si vols optimitzar
-  //       // Per exemple: const favoriteProducts = allProducts.filter(p => user.savedProducts.includes(p._id));
-  //     }
-  //     set({ isLoading: false });
-  //   } catch (error: any) {
-  //     set({ error: error.message || 'Error fetching favorite products', isLoading: false });
-  //     throw error;
-  //   }
-  // },
+  fetchFavoriteProducts: async (clerkUserId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.get(`/users/favorites/${clerkUserId}`);
+      console.log('Fetched favorite products:', response.data.favorites);
+      set({ favoriteProducts: response.data.favorites || [], isLoading: false });
+
+    } catch (error: any) {
+      set({ error: error.message || 'Error fetching favorite products', isLoading: false });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  }
 }));

@@ -8,15 +8,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  SafeAreaView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useUser }  from '@clerk/clerk-expo';
 import { useFonts } from 'expo-font';
 import { usePostStore } from '@/store/post-store';
-import { Post } from '@/services/types';
 import  PostCard from '@/components/postCard';
+import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 
 export default function Feed() {
@@ -32,7 +33,11 @@ export default function Feed() {
   });
 
   useEffect(() => {
-    fetchPosts();
+    fetchPosts().then(() => {
+      console.log(posts);
+    }).catch((err) => {
+      console.error('Error fetching posts:', err);
+    });
   }, [fetchPosts]);
 
   const onRefresh = useCallback( async () => { 
@@ -61,14 +66,10 @@ export default function Feed() {
     router.push('/post');
   }, [router]);
 
-  if (!fontsLoaded) {
-    return null; // Avoid rendering until fonts are loaded
-  }
-
-  if (isLoading) {
+  if (isLoading || !fontsLoaded) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centered}>
+      <SafeAreaView style={HS.container}>
+        <View style={HS.loadingContainer}>
           <ActivityIndicator size="large" color="#3D5AF1" />
         </View>
       </SafeAreaView>
@@ -77,9 +78,9 @@ export default function Feed() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
+      <SafeAreaView style={HS.container}>
+        <View style={HS.errorContainer}>
+          <Text style={HS.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => fetchPosts()}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
@@ -89,8 +90,8 @@ export default function Feed() {
   }
 
   return (
-    <SafeAreaView>
-      <View style={styles.container}>
+    <SafeAreaView style={HS.container}>
+      <View >
       <FlatList
         data={posts}
         renderItem={({ item }) => (
@@ -105,10 +106,10 @@ export default function Feed() {
         style={styles.feedList}
         contentContainerStyle={styles.feedListContent}
         ListEmptyComponent={() => (
-          <View style={styles.centeredEmptyFeed}>
+          <View style={HS.emptyContainer}>
             <Ionicons name="people-outline" size={60} color="#CBD5E1" />
-            <Text style={styles.emptyFeedText}>The feed is quiet right now.</Text>
-            <Text style={styles.emptyFeedSubText}>Be the first to share something!</Text>
+            <Text style={HS.emptyTitle}>The feed is quiet right now.</Text>
+            <Text style={HS.emptySubtitle}>Be the first to share something!</Text>
           </View>
         )}
         refreshControl={
@@ -121,65 +122,15 @@ export default function Feed() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    // flex: 1,
-    backgroundColor: '#F3F4F6'
-  },
-  centered:  { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    backgroundColor: '#F3F4F6'
-  },
-  centeredEmptyFeed: { 
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 50
-  },
-  emptyFeedText: { marginTop: 15, fontSize: 18, fontWeight: '600', color: '#4B5563', fontFamily: 'PlusJakartaSans-Bold' },
-  emptyFeedSubText: { marginTop: 5, fontSize: 14, color: '#6B7280', textAlign: 'center', fontFamily: 'PlusJakartaSans-Regular' },
-  feedList: { 
-    //flex: 1,
+  feedList: {
+    paddingTop: 10,
+    marginBottom: 25,
+    backgroundColor: '#F9F9F9',
   },
   feedListContent: { 
-    paddingVertical: 10, 
+    paddingVertical: 15, 
     paddingHorizontal: 5,
   },
-  postCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginHorizontal: 12,
-    marginBottom: 15,
-    padding: 15,
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-  },
-  authorSection: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  authorAvatar: { width: 40, height: 40, borderRadius: 20, marginRight: 12 },
-  authorName: { fontSize: 16, fontWeight: '600', color: '#1F2937', fontFamily: 'PlusJakartaSans-Bold' },
-  postTimestamp: { fontSize: 13, color: '#6B7280', fontFamily: 'PlusJakartaSans-Regular' },
-  postText: { fontSize: 15, color: '#374151', lineHeight: 22, marginBottom: 12, fontFamily: 'PlusJakartaSans-Regular' },
-  postImagesContainer: { marginBottom: 12 },
-  postImage: {
-    width: 300,
-    height: 200,
-    borderRadius: 8,
-    marginRight: 10,
-    resizeMode: 'cover',
-  },
-  actionsSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  actionButton: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
-  actionText: { marginLeft: 8, fontSize: 14, color: '#6B7280', fontFamily: 'PlusJakartaSans-Regular' },
   commentsPreviewSection: {
     marginTop: 12,
     paddingTop: 10,
@@ -192,8 +143,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontFamily: 'PlusJakartaSans-Bold',
   },
-  headerButton: { marginRight: 15 },
-  errorText: { fontSize: 16, color: '#EF4444', fontFamily: 'PlusJakartaSans-Bold', marginBottom: 10 },
   retryButton: {
     backgroundColor: '#3D5AF1',
     borderRadius: 8,

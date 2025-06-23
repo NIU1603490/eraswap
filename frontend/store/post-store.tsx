@@ -51,6 +51,7 @@ export const usePostStore = create<PostState>((set,get)=> ({
     },
 
     addPost: async (postData) => {
+        set({ isLoading: true});
         try {
             const response = await api.post('/posts/create', postData);
             if(response.data.success) {
@@ -58,11 +59,14 @@ export const usePostStore = create<PostState>((set,get)=> ({
             }
         } catch (error) {
             console.error('Error creating post:', error);
+        } finally {
+            set({ isLoading: false });
         }
         
     },
 
     updatePost: async (id, updates) => {
+        set({ isLoading: true});
         try {
             const response = await api.put(`/posts/update/${id}`, updates);
             if(response.data.success) {
@@ -72,11 +76,14 @@ export const usePostStore = create<PostState>((set,get)=> ({
             }
         } catch (error) {
             console.error('Error updating post:', error);
+        } finally {
+            set({ isLoading: false });
         }
         
     },
 
     deletePost: async (id) => {
+        set({ isLoading: true });
         try {
             const response = await api.delete(`/posts/delete/${id}`);
             if(response.data.success) {
@@ -84,6 +91,8 @@ export const usePostStore = create<PostState>((set,get)=> ({
             }
         } catch (error) {
             console.error('Error deleting post:', error);
+        } finally {
+            set({ isLoading: false });
         }
         
     },
@@ -111,8 +120,8 @@ export const usePostStore = create<PostState>((set,get)=> ({
         
     },
 
-    isLikedByUser: async (id, userId) => {
+    // isLikedByUser: async (id, userId) => {
 
-    }
+    // }
 
 }))

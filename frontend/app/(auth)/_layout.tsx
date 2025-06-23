@@ -8,7 +8,7 @@ export default function AuthLayout() {
 
     // Redirect to the home screen if the user is signed in
     if (isSignedIn) {
-        return <Redirect href="/(tabs)/home" />;
+        return <Redirect href="/home" />;
     }
 
     // Otherwise, show the signup and login screens

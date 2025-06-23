@@ -18,6 +18,7 @@ export default function OtherProfile() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useUser();
+
   const { fetchObjectUser, fetchUser, user: current, selectedUser} = useUserStore();
   const { fetchProductsByClerkId, userProducts } = useProductStore();
   const { fetchPostsByClerkId, userPosts } = usePostStore();
@@ -38,16 +39,14 @@ export default function OtherProfile() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      
-      
       if (!id) 
         return;
       try {
         if (user?.id) {
-          const myData = await fetchUser(user.id);
-          setCurrentUser(myData);
-          if(id == myData?._id){
-            router.push('/(tabs)/profile');
+          await fetchUser(user.id);
+          // setCurrentUser(myData);
+          if(id == current?._id){
+            router.push('/profile');
           }
         }
         const profile = await fetchObjectUser(id as string);
@@ -56,11 +55,9 @@ export default function OtherProfile() {
         await fetchProductsByClerkId(profile.clerkUserId);
         await fetchPostsByClerkId(profile.clerkUserId);
 
-        await Promise.all([fetchFollowers(id as string), fetchFollowing(id as string)]);
-        if (user?.id) {
-          const myData = await fetchUser(user.id);
-          setCurrentUser(myData);
-        }
+        await fetchFollowers(id as string);
+        await fetchFollowing(id as string);
+
       } catch (err: any) {
         setError(err.message || 'Error al cargar los datos del usuario');
         Toast.show({ type: 'error', text1: err.message });
@@ -114,7 +111,7 @@ export default function OtherProfile() {
 
   return (
     <SafeAreaView>
-      <View style={styles.container}>
+      <View>
       <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#1F2937" />
@@ -200,7 +197,6 @@ export default function OtherProfile() {
                 post={item}
                 onLikePress={() => {}}
                 onProfilePress={() => {}}
-                onPostDetailPress={() => {}}
               />
             </TouchableOpacity>
 
@@ -219,10 +215,6 @@ export default function OtherProfile() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    // flex: 1,
-    backgroundColor: '#fff',
-  },
   header: {
     flexDirection: 'row',
     paddingHorizontal: 15,

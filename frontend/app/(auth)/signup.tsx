@@ -43,7 +43,7 @@ export default function SignUp() {
   console.log('isSignedIn:', isSignedIn);
 
   if (isSignedIn) {
-    return <Redirect href="/(tabs)/home" />;
+    return <Redirect href="/home" />;
   }
 
   
@@ -172,7 +172,7 @@ export default function SignUp() {
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
         console.log('Sign-up successful! User is signed in.');
-        router.push('/(tabs)/home');
+        router.push('/home');
       }
     } catch (error: any) {
       console.error('Signup error:', error);

@@ -3,7 +3,7 @@ const Post = require('../models/post');
 
 const createPost = async (req, res) => {
     try {
-        const { content, images, userId } = req.body;
+        const { content, image, userId } = req.body;
 
         if (!content || !userId) {
             return res.status(400).json({ success: false, message: 'content and userId are required' });
@@ -17,7 +17,7 @@ const createPost = async (req, res) => {
         const post = new Post({
             author: user._id,
             content,
-            images: images || []
+            image: image || ''
         });
 
         await post.save();
@@ -69,7 +69,8 @@ const deletePost = async (req, res) => {
 const getAllPosts = async (req, res) => {
     try {
         const posts = await Post.find()
-            .populate('author', 'firstName lastName username profilePicture');
+            .populate('author', 'firstName lastName username profilePicture')
+            .sort({ createdAt: -1 }); // sort by creation date, newest first
         res.status(200).json({ success: true, posts });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error fetching posts', error: error.message });
@@ -86,7 +87,8 @@ const getPostByUserId = async (req, res) => {
         }
 
         const posts = await Post.find({ author: user._id })
-            .populate('author', 'firstName lastName username profilePicture');
+            .populate('author', 'firstName lastName username profilePicture')
+            .sort({ createdAt: -1 }); // sort by creation date, newest first
 
         res.status(200).json({ success: true, posts });
     } catch (error) {

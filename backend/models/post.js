@@ -11,8 +11,8 @@ const postSchema = new Schema({
         type: String,
         required: true,
     },
-    images: [{type: String,}],
-    likes: [{type: String,}],
+    image: { type: String, },
+    likes: [{ type: String, }],
     comments: [{
         user: {
             type: mongoose.Schema.Types.ObjectId,
@@ -22,9 +22,9 @@ const postSchema = new Schema({
         timestamp: {
             type: Date,
             default: Date.now,
-        }, 
+        },
     }],
-}, { timestmaps: true});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Post', postSchema);
 

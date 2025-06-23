@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { categories, conditions } from '@/assets/constants/constants';
 import { useProductStore } from '@/store/product-store';
 import { uploadImage } from '@/services/imageService';
+import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 // Format de les categories i condicions per al Dropdown
 const categoryData = categories.map((cat) => ({ label: cat.name, value: cat.name }));
@@ -33,7 +34,6 @@ export default function CreateProduct() {
     'PlusJakartaSans-Bold': require('@/assets/fonts/PlusJakartaSans-Bold.ttf'),
   });
 
-    
   
   const handleCancel = () => {
     router.back();
@@ -72,11 +72,8 @@ export default function CreateProduct() {
       images: uploadedUrls,
       seller: user.id };
 
-
     try {
-      console.log('Product data:', productData);
       const response = await createProduct(productData);
-      console.log('Create product response:', response);
       if(response) {
         router.push('/home');
         alert('Product created successfully');
@@ -119,9 +116,9 @@ export default function CreateProduct() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.sellText}>Sell</Text>
+    <SafeAreaView style={HS.container}>
+      <View style={HS.header2}>
+        <Text style={HS.headerTitle}>Sell</Text>
         <TouchableOpacity onPress={handleCancel}>
           <Text style={styles.cancelButton}>Cancel</Text>
         </TouchableOpacity>
@@ -207,11 +204,11 @@ export default function CreateProduct() {
           <Text style={styles.currency}>EUR</Text>
         </View>
         <TouchableOpacity
-          style={[styles.button, (!isFormValid) && styles.disabledButton]}
+          style={[HS.publishButton, (!isFormValid) && HS.disabledButton]}
           onPress={handlePublish}
           disabled={!isFormValid}
         >
-          <Text style={[styles.buttonText, !isFormValid && styles.disabledButtonText]}>Publish</Text>
+          <Text style={[HS.publishButtonText, !isFormValid && styles.disabledButtonText]}>Publish</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -219,34 +216,16 @@ export default function CreateProduct() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 10,
-    marginTop: 30,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
   cancelButton: {
     fontSize: 14,
     color: 'red',
     fontFamily: 'PlusJakartaSans-Bold',
   },
-  sellText: {
-    fontSize: 18,
-    fontFamily: 'PlusJakartaSans-Bold',
-    color: '#000',
-  },
   contentArea: {
     flex: 1,
     padding: 10,
     gap: 15,
+    margin: 10,
   },
   prompt: {
     fontSize: 16,
@@ -345,21 +324,6 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     marginLeft: 10,
     fontFamily: 'PlusJakartaSans-Bold',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 20,
-    paddingVertical: 14,
-    alignItems: 'center',
-    margin: 16,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 14,
-    fontFamily: 'PlusJakartaSans-Bold',
-  },
-  disabledButton: {
-    backgroundColor: '#A0A0A0',
   },
   disabledButtonText: {
     color: '#D3D3D3',

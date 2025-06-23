@@ -1,6 +1,7 @@
 import api from './api';
 
 export const uploadImage = async (uri: string): Promise<string> => {
+  console.log('Uploading image:', uri);
   const fileName = uri.split('/').pop() || 'photo.jpg';
   const match = /\.(\w+)$/.exec(fileName);
   const type = match ? `image/${match[1]}` : 'image';

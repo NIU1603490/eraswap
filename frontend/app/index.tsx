@@ -1,9 +1,10 @@
 import { Redirect } from "expo-router"
 import { SafeAreaView, View, ActivityIndicator } from "react-native";
-import { SignedIn, SignedOut, useUser, useAuth } from '@clerk/clerk-expo'
+import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-expo';
+
 export default function Index() {
-  const { isSignedIn, isLoaded } = useAuth();
-  // Handle Clerk loading state
+  const { isLoaded } = useAuth();
+
     if (!isLoaded) {
       console.log('index loading')
       return (
@@ -21,11 +22,6 @@ export default function Index() {
       <SignedOut>
         <Redirect href="/signup" />
       </SignedOut>
-      {/* {isSignedIn ? (
-        <Redirect href="/(tabs)/home" />
-      ) : (
-        <Redirect href="/(auth)/signup" />
-      )} */}
     </SafeAreaView>
   );
 }

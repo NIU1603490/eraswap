@@ -45,8 +45,8 @@ const userSchema = new Schema({
         default: 'https://www.gravatar.com/avatar/?d=mp',
     },
     savedProducts: [{
-            type: Schema.Types.ObjectId,
-            ref: 'Product',
+        type: Schema.Types.ObjectId,
+        ref: 'Product',
     }],
     rating: {
         average: {

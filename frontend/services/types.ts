@@ -60,7 +60,7 @@ export interface Post {
   _id: string,
   author: User,
   content: string,
-  images: [string],
+  image: string, //only one image for now
   likes: [string],
   comments: [{
     user: User,
@@ -147,7 +147,7 @@ export interface TransactionData {
   product: string;
   seller: string;
   price: { amount: number; currency: string };
-  status: 'Pending' | 'Completed' | 'Canceled';
+  status: 'Pending' | 'Confirmed' | 'Completed' | 'Canceled';
   paymentMethod: 'cash' | 'online';
   deliveryMethod: 'inPerson' | 'delivery';
   meetingDate: Date;
@@ -162,7 +162,7 @@ export interface Transaction {
   product: {_id: string, title: string, images: string[]};
   seller: {_id: string, username: string};
   price: { amount: number; currency: string };
-  status: 'Pending' | 'Completed' | 'Canceled';
+  status: 'Pending' | 'Confirmed'| 'Completed' | 'Canceled';
   paymentMethod: 'cash' | 'online';
   deliveryMethod: 'inPerson' | 'delivery';
   meetingDate: Date;

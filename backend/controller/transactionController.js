@@ -65,8 +65,6 @@ const createTransaction = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Transaction not created' });
     }
 
-
-
     console.log('Transaction created:', transaction);
     res.status(201).json({ success: true, data: transaction });
   } catch (error) {
@@ -161,7 +159,7 @@ const updateTransaction = async (req, res) => {
 
     const updatedTransaction = await Transaction.findByIdAndUpdate(
       transactionId,
-      {status}, //actualitzar camp status
+      {status}, //update status
       { new: true, runValidators: true}
     );
 
@@ -181,7 +179,9 @@ const updateTransaction = async (req, res) => {
         newProductStatus = 'Sold';
       } else if (status === 'Canceled') {
         newProductStatus = 'Available';
-      }
+      }  else if (status === 'Confirmed') {
+        newProductStatus = 'Reserved';
+      } 
 
       if (newProductStatus) {
         await Product.findByIdAndUpdate(

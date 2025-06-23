@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Dimensions, FlatList } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Product, UserData } from '@/services/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { useUser } from '@clerk/clerk-expo';
 import { useProductStore } from '@/store/product-store';
-import * as chatService from '@/services/conversationService';
 import { useUserStore } from '@/store/user-store';
 import { useChatStore } from '@/store/chat-store';
+import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 export default function ProductDetail() {
   const { id } = useLocalSearchParams() as { id: string }; // product id
@@ -36,7 +35,6 @@ export default function ProductDetail() {
       fetchProductById(id).catch((err) => {
         console.error('Error fetching product:', err);
       });
-      console.log(selectedProduct?.images);
     }
   }, [id, fetchProductById]);
 
@@ -122,8 +120,8 @@ export default function ProductDetail() {
 
   if (!fontsLoaded || productLoading || isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
+      <SafeAreaView style={HS.container}>
+        <View style={HS.loadingContainer}>
           <ActivityIndicator size="large" color="#3D5AF1" />
         </View>
       </SafeAreaView>
@@ -132,9 +130,9 @@ export default function ProductDetail() {
 
   if (productError || !selectedProduct || !selectedUser) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{productError || 'Product or seller not found'}</Text>
+      <SafeAreaView style={HS.container}>
+        <View style={HS.errorContainer}>
+          <Text style={HS.errorText}>{productError || 'Product or seller not found'}</Text>
           <TouchableOpacity style={styles.backButtonError} onPress={() => router.back()}>
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
@@ -143,7 +141,7 @@ export default function ProductDetail() {
     );
   }
 
-  const isSeller = user?.id === selectedUser._id;
+  const isSeller = user?.id === selectedUser.clerkUserId;
   
   console.log(images);
   const renderImageItem = ({ item }: { item: string }) => (
@@ -157,14 +155,14 @@ export default function ProductDetail() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, isSeller && styles.sellerContainer]}>
+    <SafeAreaView style={[HS.container, isSeller && styles.sellerContainer]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={HS.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#1F2937" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{selectedProduct.title || 'Unknown Product'}</Text>
+          <Text style={HS.headerTitle}>{selectedProduct.title || 'Unknown Product'}</Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -289,27 +287,8 @@ export default function ProductDetail() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   sellerContainer: {
     backgroundColor: 'fff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#EF4444',
-    fontFamily: 'PlusJakartaSans-Regular',
-    marginBottom: 15,
   },
   backButtonError: {
     paddingVertical: 10,
@@ -321,26 +300,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontFamily: 'PlusJakartaSans-Bold',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'PlusJakartaSans-Bold',
-    color: '#1F2937',
   },
   carousel: {
     height: 300,

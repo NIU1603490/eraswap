@@ -28,21 +28,21 @@ app.use('/api/products', requireAuth(), productRoutes); // Product routes
 app.use('/api/transactions', requireAuth(), transactionRoutes); // Transaction routes
 app.use('/api/follows', requireAuth(), followRoutes);
 app.use('/api/posts', requireAuth(), postRoutes);
-app.use('/api/images', requireAuth(), imageRoutes);
+app.use('/api/images', imageRoutes);
 app.use('/api/conversations', requireAuth(), conversationRoutes);
 app.use('/api/messages', requireAuth(), messageRoutes);
 app.use('/api/ai', aiRoutes);
 
-// app.use('/api/locations', requireAuth(), locationRoutes); // Location routes
-// app.use('/api/users', requireAuth(), userRoutes); // User routes
-// app.use('/api/products', requireAuth(), productRoutes); // Product routes
-// app.use('/api/transactions', requireAuth(), transactionRoutes); // Transaction routes
-// app.use('/api/follows', requireAuth(), followRoutes);
-// app.use('/api/posts', requireAuth(), postRoutes);
-// app.use('/api/images', requireAuth(), imageRoutes);
-// app.use('/api/conversations', requireAuth(), conversationRoutes);
-// app.use('/api/messages', requireAuth(), messageRoutes);
-// app.use('/api/ai', requireAuth(), aiRoutes);
+// app.use('/api/locations', locationRoutes); // Location routes
+// app.use('/api/users', userRoutes); // User routes
+// app.use('/api/products', productRoutes); // Product routes
+// app.use('/api/transactions', transactionRoutes); // Transaction routes
+// app.use('/api/follows', followRoutes);
+// app.use('/api/posts', postRoutes);
+// app.use('/api/images', imageRoutes);
+// app.use('/api/conversations', conversationRoutes);
+// app.use('/api/messages', messageRoutes);
+// app.use('/api/ai', aiRoutes);
 
 
 

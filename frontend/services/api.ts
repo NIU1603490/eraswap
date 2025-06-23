@@ -1,6 +1,7 @@
 ///services/api.ts
 import axios, { AxiosResponse } from 'axios';
-import { Platform } from 'react-native';
+import { fetchAuthToken } from './authToken';
+
 
 //const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.137.65:5000/api';
 //const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.1.217.136:5000/api';
@@ -30,6 +31,16 @@ export function setAuthToken(token: string | null) {
     delete api.defaults.headers.common['Authorization'];
   }
 }
+
+// Attach latest Clerk token before each request
+api.interceptors.request.use(async (config) => {
+  const token = await fetchAuthToken();
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // Basic error handling
 api.interceptors.response.use(

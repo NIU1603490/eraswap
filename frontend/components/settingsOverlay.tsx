@@ -5,26 +5,33 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useClerk  } from '@clerk/clerk-expo';
+import type { ComponentProps } from 'react';
 
 
-const { width } = Dimensions.get('window');
-const OVERLAY_WIDTH = width * 0.7;
+const { width } = Dimensions.get('window'); // get the device width
+const OVERLAY_WIDTH = width * 0.7; // set the overlay width to 70% of the device width
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
 
 interface SettingsOverlayProps {
   isVisible: boolean;
   onClose: () => void;
 }
 
+// SettingsOverlay component to display user settings and options
 const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ isVisible, onClose }) => {
   const router = useRouter();
   const { signOut } = useClerk();
 
-  const translateX = useSharedValue(isVisible ? 0 : -OVERLAY_WIDTH);
+  const translateX = useSharedValue(isVisible ? 0 : -OVERLAY_WIDTH); // Initialize translateX based on visibility
 
   React.useEffect(() => {
-    translateX.value = withSpring(isVisible ? 0 : -OVERLAY_WIDTH, { damping: 15 });
+    // animate the overlay when visibility changes
+    translateX.value = withSpring(isVisible ? 0 : -OVERLAY_WIDTH, 
+      { damping: 15 }); // Adjust damping for smoother animation
   }, [isVisible, translateX]);
 
+  // animated style for the overlay
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
@@ -41,11 +48,11 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ isVisible, onClose })
     }
   };
 
-  const menuItems: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }[] = [
-    { icon: 'person-outline', label: 'Profile', onPress: () => { router.push('/(tabs)/profile'); onClose(); } },
-    { icon: 'lock-closed-outline', label: 'Password', onPress: () => { router.push('/home'); onClose(); } },
-    { icon: 'notifications-outline', label: 'Notifications', onPress: () => { router.push('/home'); onClose(); } },
-    { icon: 'heart-outline', label: 'Favorites', onPress: () => { router.push('/home'); onClose(); } },
+  type MenuItem = { icon: IoniconName; label: string; onPress: () => void };
+
+  const menuItems: MenuItem[] = [
+    { icon: 'person-outline', label: 'Profile', onPress: () => { router.push('/profile'); onClose(); } },
+    { icon: 'heart-outline', label: 'Favorites', onPress: () => { router.push('/prod/favorites'); onClose(); } },
     { icon: 'star-outline', label: 'Purchases', onPress: () => { router.push('/purch/purchase_list'); onClose(); } },
     { icon: 'help-circle-outline', label: 'Help', onPress: () => { router.push('/home'); onClose(); } },
   ];
@@ -59,13 +66,11 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ isVisible, onClose })
     >
       <TouchableOpacity style={styles.overlayBackground} onPress={onClose} activeOpacity={1}>
         <Animated.View style={[styles.overlay, animatedStyle]}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="close" size={24} color="#333" />
-          </TouchableOpacity>
+
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Account</Text>
-            {menuItems.slice(0, 4).map((item, index) => (
+            {menuItems.slice(0, 3).map((item, index) => (
               <TouchableOpacity key={index} style={styles.menuItem} onPress={item.onPress}>
                 <Ionicons name={item.icon} size={20} color="#333" />
                 <Text style={styles.menuItemText}>{item.label}</Text>
@@ -76,7 +81,7 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({ isVisible, onClose })
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>More</Text>
-            {menuItems.slice(4).map((item, index) => (
+            {menuItems.slice(3).map((item, index) => (
               <TouchableOpacity key={index} style={styles.menuItem} onPress={item.onPress}>
                 <Ionicons name={item.icon} size={20} color="#333" />
                 <Text style={styles.menuItemText}>{item.label}</Text>

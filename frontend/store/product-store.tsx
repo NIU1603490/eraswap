@@ -8,8 +8,10 @@ interface ProductState {
   userProducts: Product[];
   selectedProduct: Product | null;
   isLoading: boolean;
+  refreshing: boolean;
   error: string | null;
   fetchProducts: (clerkUserId: string) => Promise<void>;
+  refreshProducts: (clerkUserId: string) => Promise<void>;
   fetchProductById: (id: string) => Promise<void>;
   fetchProductsByClerkId: (clerkUserId: string) => Promise<void>;
   createProduct: (productData: ProductData) => Promise<any>;
@@ -18,11 +20,12 @@ interface ProductState {
   setSelectedProduct: (product: Product | null) => void;
 }
 
-export const useProductStore = create<ProductState>((set) => ({
+export const useProductStore = create<ProductState>((set, get) => ({
   products: [],
   userProducts: [],
   selectedProduct: null,
   isLoading: false,
+  refreshing: false,
   error: null,
 
 
@@ -33,6 +36,17 @@ export const useProductStore = create<ProductState>((set) => ({
       set({ products: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
+    }
+  },
+
+  refreshProducts: async (clerkUserId: string) => {
+    set({ refreshing: true, error: null });
+    try {
+      await get().fetchProducts(clerkUserId);
+    } catch (err) {
+      // fetchProducts already sets error
+    } finally {
+      set({ refreshing: false });
     }
   },
 

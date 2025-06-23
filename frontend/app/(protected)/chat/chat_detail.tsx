@@ -36,11 +36,6 @@ export default function ChatScreen() {
   const chatId = params.chatId;
 
   console.log('CHAT DETAIL');
-  console.log(params);
-  console.log(otherUserName);
-  console.log(otherUserProfilePicture);
-  console.log(otherUserId);
-  console.log(chatId);
 
   // const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');

@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, ActivityIndicator, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import React, { useState } from 'react';
 import { useClerk } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
@@ -7,11 +7,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { usePostStore } from '@/store/post-store';
+import { uploadImage } from '@/services/imageService';
+import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 export default function create_post() {
   const router = useRouter();
   const { user } = useClerk();
-  const { addPost } = usePostStore();
+  const { addPost, isLoading } = usePostStore();
 
   const [postText, setPostText] = useState('');
   const [image, setImage] = useState('');
@@ -27,14 +29,26 @@ export default function create_post() {
 
   const handlePublish = async () => {
     if (!postText.trim()) return;
+
+    let imageUrl = image ? image : '';
+    if (image) {
+      try {
+        imageUrl = await uploadImage(image);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        return;
+      }
+    }
+
     try {
       await addPost({
         content: postText.trim(),
-        images: image ? [image] : [],
+        image: imageUrl,
         userId: user?.id,
       });
       router.back();
-      
+      alert('Post created successfully!');
+
     } catch (error) {
       console.error('Error creating post:', error);
     }
@@ -42,7 +56,6 @@ export default function create_post() {
 
   const handleAddImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
@@ -59,91 +72,74 @@ export default function create_post() {
 
   const profileImage = user?.imageUrl;
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
-          <Text style={styles.cancelButton}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handlePublish}
-          disabled={!postText}
-          style={[styles.headerButton, !postText && styles.disabledButton]}
-        >
-          <Text style={styles.publishButton}>Publish</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.containerPost}>
-        <View style={styles.containerContent}>
-          <Image source={{ uri: profileImage }} style={styles.profileImage} />
-          <TextInput
-            style={styles.postText}
-            value={postText}
-            onChangeText={setPostText}
-            placeholder="What are you thinking?"
-            placeholderTextColor="#666"
-            multiline
-            autoFocus
-          />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <SafeAreaView style={HS.container}>
+        <View style={HS.header2}>
+          <Text style={HS.headerTitle}> Post </Text>
+          <TouchableOpacity onPress={handleCancel}>
+            <Text style={styles.cancelButton}>Cancel</Text>
+          </TouchableOpacity>
         </View>
 
-        {image ? (
-          <View style={styles.imageContainer}>
-            <Image source={{ uri: image }} style={styles.image} />
-            <TouchableOpacity style={styles.removeImageButton} onPress={handleRemoveImage}>
-              <Ionicons name="trash" size={16} color="white" />
-            </TouchableOpacity>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.containerPost}>
+            <View style={styles.containerContent}>
+              <Image source={{ uri: profileImage }} style={styles.profileImage} />
+              <TextInput
+                style={styles.postText}
+                value={postText}
+                onChangeText={setPostText}
+                placeholder="What are you thinking?"
+                placeholderTextColor="#666"
+                multiline
+              />
+            </View>
+
+            {image ? (
+              <View style={styles.imageContainer}>
+                <Image source={{ uri: image }} style={styles.image} />
+                <TouchableOpacity style={styles.removeImageButton} onPress={handleRemoveImage}>
+                  <Ionicons name="trash" size={16} color="white" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.addImageButton} onPress={handleAddImage}>
+                <Ionicons name="image" size={24} color="#007AFF" />
+                <Text style={styles.addImageText}>Add Photo</Text>
+              </TouchableOpacity>
+            )}
           </View>
-        ) : (
-          <TouchableOpacity style={styles.addImageButton} onPress={handleAddImage}>
-            <Ionicons name="image" size={24} color="#007AFF" />
-            <Text style={styles.addImageText}>Add Photo</Text>
+
+          <TouchableOpacity
+            onPress={handlePublish}
+            disabled={!postText || isLoading}
+            style={[HS.publishButton, (!postText || isLoading) && HS.disabledButton]}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#007aff" />
+            ) : (
+              <Text style={HS.publishButtonText}>Publish</Text>
+            )}
           </TouchableOpacity>
-        )}
-      </View>
-    </SafeAreaView>
+
+        </KeyboardAvoidingView>
+      </SafeAreaView >
+    </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 15, // Increased padding for better breathing room
-    marginTop: 10,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    marginBottom: 15, // Added margin for separation
-  },
-  headerButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-  },
   cancelButton: {
     fontSize: 14,
     color: 'red',
     fontFamily: 'PlusJakartaSans-Bold',
-    textAlign: 'center',
-  },
-  publishButton: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontFamily: 'PlusJakartaSans-Bold',
-    textAlign: 'center',
-    
-  },
-  disabledButton: {
-    opacity: 0.5, // Dimmed when disabled
   },
   containerPost: {
-    marginTop: 15, // Slightly increased for better spacing
+    margin: 15,
     flexDirection: 'column',
     gap: 15, // Increased gap for consistency
   },

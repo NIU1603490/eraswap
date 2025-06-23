@@ -38,7 +38,7 @@ export const useChatStore = create<ChatState>((set) => ({
       set({ conversations: res.data.conversations });
     } catch (err: any) {
       console.error('Error fetching conversations:', err);
-      set({ error: err.message });
+      set({ conversations: [], error: err.message });
     } finally {
       set({ isLoading: false });
     }

@@ -1,7 +1,7 @@
-import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, Image, FlatList } from 'react-native'
+import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, Image, FlatList, ActivityIndicator } from 'react-native'
 import React, { useState, useEffect } from 'react'
-import { Link, useRouter } from "expo-router";
-import { useAuth, useUser} from '@clerk/clerk-expo';
+import { useRouter } from "expo-router";
+import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useFonts } from "expo-font";
 import { Ionicons } from '@expo/vector-icons';
 
@@ -13,20 +13,22 @@ import { useUserStore } from '@/store/user-store';
 import { useProductStore } from '@/store/product-store';
 import { usePostStore } from '@/store/post-store';
 import { useFollowStore } from '@/store/follow-store';
+import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
+import { blue } from 'react-native-reanimated/lib/typescript/Colors';
 
 export default function Profile() {
-  
+
   const { user } = useUser();
   const { isSignedIn, isLoaded } = useAuth();
-  const { fetchUser } = useUserStore();
-  const { fetchProductsByClerkId, userProducts} = useProductStore();
-  const { fetchPostsByClerkId, userPosts } = usePostStore();
-  const { followers, following, fetchFollowers, fetchFollowing } = useFollowStore();
+  const { fetchUser, isLoading: userLoading } = useUserStore();
+  const { fetchProductsByClerkId, userProducts, isLoading: productLoading } = useProductStore();
+  const { fetchPostsByClerkId, userPosts, isLoading: postLoading } = usePostStore();
+  const { followers, following, fetchFollowers, fetchFollowing, isLoading: followLoading } = useFollowStore();
   const router = useRouter();
 
   const [userData, setUserData] = useState<User | null>(null);
   const [selectedTab, setSelectedTab] = useState('Products');
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [fontsLoaded] = useFonts({
@@ -34,110 +36,107 @@ export default function Profile() {
     'PlusJakartaSans-Bold': require('@/assets/fonts/PlusJakartaSans-Bold.ttf'),
   });
 
+  const isAnyLoading = !fontsLoaded || userLoading || productLoading || postLoading || followLoading;
 
   useEffect(() => {
     const loadUserData = async () => {
-      if (!user?.id || !isLoaded) {
-        setLoading(false);
-        return;
-      }
+      if (!user?.id || !isLoaded) return;
+
       try {
-        // console.log('Fetching user data for ID:', user.id);
         const userResponse = await fetchUser(user.id);
-        // console.log('User data:', userResponse);
         setUserData(userResponse);
-
-        // console.log('Fetching products for user ID:', user.id);
-        const productResponse = await fetchProductsByClerkId(user.id);
-        // console.log('Product data:', productResponse);
-
+        await fetchProductsByClerkId(user.id);
         await fetchPostsByClerkId(user.id);
-        console.log('Fetching followers:', user.id);
-        const follows = await fetchFollowers(user.id);
-        console.log(follows);
+        await fetchFollowers(user.id);
         await fetchFollowing(user.id);
 
       } catch (err: any) {
         setError(err.message || 'Error al cargar los datos del usuario');
         Toast.show({ type: 'error', text1: err.message });
-      } finally {
-        setLoading(false);
       }
     };
     loadUserData();
   }, [user?.id, isLoaded]);
 
+  if (isAnyLoading) {
+    return (
+      <SafeAreaView style={HS.loadingContainer}>
+        <ActivityIndicator size="large" color="#3D5AF1" />
+      </SafeAreaView>
+    );
+  }
+
 
   return (
-      <SafeAreaView>
+    <SafeAreaView style={HS.container}>
       {/* Profile Info */}
-      <View style={styles.container}>
-      <View style={styles.profileContainer}>
-        
-        <View style={styles.followStats}>
-          <View style={styles.followItem}>
-            <Text style={styles.followCount}>{followers.length}</Text>
-            <Text style={styles.followLabel}>followers</Text>
-          </View>
+      <View >
+        <View style={styles.profileContainer}>
 
-          <Image
-      
-          source={{ uri: user?.imageUrl }}
-          style={styles.profileImage} 
-          />
-        
-          <View style={styles.followItem}>
-            <Text style={styles.followCount}>{following.length}</Text>
-            <Text style={styles.followLabel}>following</Text>
+          <View style={styles.followStats}>
+            <View style={styles.followItem}>
+              <Text style={styles.followCount}>{followers.length}</Text>
+              <Text style={styles.followLabel}>followers</Text>
+            </View>
+
+            <Image
+
+              source={{ uri: userData?.profilePicture }}
+              style={styles.profileImage}
+            />
+
+            <View style={styles.followItem}>
+              <Text style={styles.followCount}>{following.length}</Text>
+              <Text style={styles.followLabel}>following</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* User Info */}
-      <Text style={styles.username}>{user?.firstName}</Text>
-      <Text style={styles.handle}>{user?.username}</Text>
-      <View style={styles.locationContainer}>
-        <Ionicons name="location-outline" size={16} color="black" />
-      <Text style={styles.locationText}>{userData?.country.name.toUpperCase()}, {userData?.city.name.toUpperCase()} </Text>
-      </View>
+        {/* User Info */}
+        <Text style={styles.username}>{user?.firstName}</Text>
+        <Text style={styles.handle}>{user?.username}</Text>
+        <View style={styles.locationContainer}>
+          <Ionicons name="location-outline" size={16} color="black" />
+          <Text style={styles.locationText}>{userData?.country.name.toUpperCase()}, {userData?.city.name.toUpperCase()} </Text>
+        </View>
 
-      {/* Action Buttons */}
-      <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/user/modify_profile')}>
-          <Text style={styles.actionButtonText}>Edit profile</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/purch/manage_purchases')}  >
-          <Text style={styles.actionButtonText}> Manage purchases</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        {['Products', 'Post', 'Reviews'].map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={styles.tabButton}
-            onPress={() => setSelectedTab(tab)}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                selectedTab === tab && styles.tabTextSelected,
-              ]}
-            >
-              {tab}
-            </Text>
-            {selectedTab === tab && <View style={styles.tabUnderline} />}
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/user/modify_profile')}>
+            <Text style={styles.actionButtonText}>Edit profile</Text>
           </TouchableOpacity>
-        ))}
-      </View>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/purch/manage_purchases')}  >
+            <Text style={styles.actionButtonText}> Manage purchases</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabContainer}>
+          {['Products', 'Post', 'Reviews'].map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={styles.tabButton}
+              onPress={() => setSelectedTab(tab)}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  selectedTab === tab && styles.tabTextSelected,
+                ]}
+              >
+                {tab}
+              </Text>
+              {selectedTab === tab && <View style={styles.tabUnderline} />}
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
       {/* Render Products */}
       {selectedTab === 'Products' && (
         <FlatList
           data={userProducts}
-          renderItem={({ item }) => <ProductCard item={item} 
-          onPress={()=> router.push(`/prod/${item._id}`)}/>}
+          renderItem={({ item }) => <ProductCard item={item}
+            onPress={() => router.push(`/prod/${item._id}`)} />}
           keyExtractor={(item) => item._id}
           numColumns={2}
           columnWrapperStyle={styles.productRow}
@@ -158,14 +157,15 @@ export default function Profile() {
             <TouchableOpacity onPress={() => router.push({ pathname: '/post/modify_post', params: { id: item._id } })}>
               <PostCard
                 post={item}
-                onLikePress={() => {}}
-                onProfilePress={() => {}}
-                // onPostDetailPress={() => {}}
+                onLikePress={() => { }}
+                onProfilePress={() => { }}
+              // onPostDetailPress={() => {}}
               />
             </TouchableOpacity>
 
           )}
           keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.postContainer}
           ListEmptyComponent={() => (
             <View style={styles.placeholderContent}>
               <Text style={styles.placeholderText}>No post available</Text>
@@ -180,10 +180,6 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    // flex: 1,
-    backgroundColor: '#fff',
-  },
   profileContainer: {
     marginTop: 10,
     padding: 10,
@@ -239,7 +235,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginVertical: 10,
-
   },
   actionButton: {
     borderWidth: 1,
@@ -257,8 +252,8 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    // borderBottomWidth: 1,
-    // borderBottomColor: '#f0f0f0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
     marginHorizontal: 15,
     marginTop: 10,
   },
@@ -288,12 +283,14 @@ const styles = StyleSheet.create({
   },
   postContainer: {
     marginTop: 10,
+    marginBottom: 45,
+    backgroundColor: '#f9f9f9',
   },
   placeholderContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop:30,
+    marginTop: 30,
   },
   placeholderText: {
     fontSize: 16,

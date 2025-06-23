@@ -6,11 +6,12 @@ import { useFonts } from 'expo-font';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { usePostStore } from '@/store/post-store';
+import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 export default function ModifyPost() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { posts, updatePost, deletePost } = usePostStore();
+  const { posts, isLoading, error, updatePost, deletePost } = usePostStore();
 
   const [content, setContent] = useState('');
   const [image, setImage] = useState('');
@@ -22,16 +23,20 @@ export default function ModifyPost() {
 
   useEffect(() => {
     const post = posts.find(p => p._id === id);
+    if (!post) {
+      console.error('Post not found for id:', id);
+      return;
+    }
     if (post) {
       setContent(post.content || '');
-      setImage(post.images && post.images[0] ? post.images[0] : '');
+      setImage(post.image || '');
     }
   }, [posts, id]);
 
   const handleUpdate = async () => {
     if (!id) return;
     try {
-      await updatePost(id as string, { content, images: image ? [image] : [] });
+      await updatePost(id as string, {content, image});
       router.back();
     } catch (err) {
       console.error('Update post error:', err);
@@ -74,14 +79,29 @@ export default function ModifyPost() {
     setImage('');
   };
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || isLoading) {  
+    return (
+      <SafeAreaView style={HS.loadingContainer}>
+        <Text>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if(error) {
+    return (
+      <SafeAreaView style={HS.container}>
+        <Text style={HS.errorText}>Error: {error}</Text>
+      </SafeAreaView>
+    );
+  };
+
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-      <Text style={styles.sellText}>Edit Post</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-          <Text style={styles.cancelButton}>Cancel</Text>
+    <SafeAreaView style={HS.container}>
+      <View style={HS.header2}>
+      <Text style={HS.headerTitle}> Edit Post </Text>
+        <TouchableOpacity onPress={() => router.back()} >
+          <Text style={HS.cancelButton}> Cancel </Text>
         </TouchableOpacity>
       </View>
 
@@ -110,8 +130,8 @@ export default function ModifyPost() {
       </View>
 
         <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={handleUpdate} style={styles.buttonPublish}>
-                <Text style={styles.buttonText}>Save</Text>
+            <TouchableOpacity onPress={handleUpdate} style={HS.publishButton}>
+                <Text style={HS.publishButtonText}>Save</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={handleDelete} style={styles.buttonDelete}>
@@ -125,49 +145,13 @@ export default function ModifyPost() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#fff',
-    },
-    header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
-    },
-    cancelButton: { 
-    fontSize: 16,
-    color: 'red',
-    fontFamily: 'PlusJakartaSans-Bold'
-    },
-    sellText: {
-    fontSize: 20,
-    fontFamily: 'PlusJakartaSans-Bold',
-    color: '#000',
-    },
-    buttonPublish: { 
-    fontSize: 14,
-    backgroundColor: '#007AFF',
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    },
     buttonDelete: {
     fontSize: 14,
-    borderRadius: 16,
+    borderRadius: 20,
     borderColor: 'red',
     borderWidth: 1,
     paddingVertical: 16,
     alignItems: 'center',
-    },
-    buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontFamily: 'PlusJakartaSans-Bold',
     },
     buttonContainer: {
     padding: 15,

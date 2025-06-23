@@ -1,5 +1,5 @@
 import { View, Text,Image, TouchableOpacity, StyleSheet} from 'react-native'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons';
 import {Product} from '../services/types'
 import { Heart } from "lucide-react-native";
@@ -14,20 +14,29 @@ const ProductCard = ({ item, onPress }: { item: Product; onPress: () => void }) 
   const clerkUserId = user?.id || '';
   const router = useRouter();
 
-  // console.log('Product Card - User ID:', clerkUserId);
-  const { fetchObjectUser, addFavorite, removeFavorite, isFavorite} = useUserStore();
-  // console.log('Favorite', isFavorite(item._id));
+  const { addFavorite, removeFavorite, isFavorite} = useUserStore();
+  const storeFav = isFavorite(item._id);
+  const [localFav, setLocalFav] = useState(storeFav);
   
+
+  useEffect(() => {
+    setLocalFav(storeFav);
+  }, [storeFav]);
+
   const handleToggleFavorite = async () => {
+    console.log('Toggling favorite for item:', item._id);
+    console.log('Current favorite state:', storeFav);
+    
     try {
-      if(isFavorite(item._id)) {
+      if(storeFav) {
         await removeFavorite(item._id, clerkUserId);
       } else {
         await addFavorite(item._id, clerkUserId);
       }
-      console.log('Favorite toggled for product:', item._id, 'Is favorite:', isFavorite(item._id));
+      setLocalFav(!storeFav);
     } catch (error) {
       console.error('Error toggling favorite:', error);
+      setLocalFav(storeFav);
     }
 
     
@@ -45,10 +54,15 @@ const ProductCard = ({ item, onPress }: { item: Product; onPress: () => void }) 
       </View>
 
     <TouchableOpacity style={styles.favoriteIcon} onPress={handleToggleFavorite}>
-      <Heart 
+      <Ionicons
+              name={localFav ? 'heart' : 'heart-outline'}
+              size={20}
+              color={localFav ? 'red' : 'gray'}
+            />
+      {/* <Heart 
       size={20}
       color="black"
-      fill={isFavorite(item._id) ? 'red' : 'none'}/>
+      fill={isFavorite(item._id) ? 'red' : 'none'}/> */}
     </TouchableOpacity>
 
     <View style={styles.productInfo}>

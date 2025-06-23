@@ -7,7 +7,7 @@ router.get('/user/:clerkUserId', userController.getUserByClerkId); // get a user
 router.get('/userObject/:userId', userController.getUser); // get a user by objectId
 router.get('/favorites/:clerkUserId', userController.getFavorites); //
 router.post('/favorites/add', userController.addFavorite);
-router.delete('/favorites/remove/:productId', userController.removeFavorite);
+router.delete('/favorites/remove/', userController.removeFavorite);
 router.patch('/:clerkUserId', userController.updateUser);
 
 module.exports = router; // Export the router for use in app.js

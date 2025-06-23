@@ -19,7 +19,8 @@ interface Props {
 
 const formatTime = (timestamp: Date) => {
   console.log(timestamp)
-  const date = new Date(timestamp);
+  const date = new Date(timestamp ?? '');
+  if (isNaN(date.getTime())) return ''; // Check if the date is valid
   const now = new Date(); 
   
   // if is today, show only the hour
@@ -46,8 +47,6 @@ const formatTime = (timestamp: Date) => {
 
 const PostCard = memo(({ post, onLikePress, onProfilePress }: Props) => (
 
-  
-  
   <View style={styles.postCard}>
     <TouchableOpacity style={styles.authorSection} onPress={() => onProfilePress(post.author._id)}>
       <Image source={{ uri: post.author.profilePicture }} style={styles.authorAvatar} />
@@ -59,16 +58,27 @@ const PostCard = memo(({ post, onLikePress, onProfilePress }: Props) => (
 
     <Text style={styles.postText}>{post.content}</Text>
 
-    {post.images && post.images.length > 0 && (
-      <FlatList
-        data={post.images}
-        horizontal
-        keyExtractor={(img, index) => `${post._id}-img-${index}`}
-        renderItem={({ item }) => <Image source={{ uri: item }} style={styles.postImage} />}
-        style={styles.postImagesContainer}
-        showsHorizontalScrollIndicator={false}
+    { post.image && (
+      // Assuming post.images is a single image URL for now
+      <View style={styles.postImagesContainer}>
+      <Image
+        source={{ uri: post.image}}
+        style={styles.postImage}
       />
+      </View>
     )}
+
+
+    {/* // {post.images && post.images.length > 0 && (
+    //   <FlatList
+    //     data={post.images}
+    //     horizontal
+    //     keyExtractor={(img, index) => `${post._id}-img-${index}`}
+    //     renderItem={({ item }) => <Image source={{ uri: item }} style={styles.postImage} />}
+    //     style={styles.postImagesContainer}
+    //     showsHorizontalScrollIndicator={false}
+    //   />
+    // )} */}
 
      <View style={styles.actionsSection}>
       <TouchableOpacity style={styles.actionButton} >
