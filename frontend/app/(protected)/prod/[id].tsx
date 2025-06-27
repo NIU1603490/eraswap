@@ -16,14 +16,14 @@ export default function ProductDetail() {
   const { user } = useUser();
 
   const { fetchProductById, deleteProduct, isLoading: productLoading, error: productError, selectedProduct } = useProductStore();
-  const { fetchObjectUser, selectedUser, isLoading, user : currentUser} = useUserStore();
-  const { findOrCreateConversation} = useChatStore();
-  
-  
+  const { fetchObjectUser, selectedUser, isLoading, user: currentUser } = useUserStore();
+  const { findOrCreateConversation } = useChatStore();
+
+
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAvailable, setIsAvailable] = useState(Boolean);
   const [images, setImages] = useState<string[]>([]);
-  
+
 
   const [fontsLoaded] = useFonts({
     'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
@@ -43,7 +43,7 @@ export default function ProductDetail() {
       if (selectedProduct?.seller) {
         try {
           await fetchObjectUser(selectedProduct.seller);
-          setIsAvailable(selectedProduct.status==='Available');
+          setIsAvailable(selectedProduct.status === 'Available');
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
@@ -92,9 +92,9 @@ export default function ProductDetail() {
     );
   };
 
-  const handleMessageUser = async() => {
+  const handleMessageUser = async () => {
     try {
-    console.log(selectedUser?._id);
+      console.log(selectedUser?._id);
       if (!currentUser || !selectedUser) return;
       console.log('USER ID', currentUser._id);
       const conversation = await findOrCreateConversation({
@@ -106,13 +106,14 @@ export default function ProductDetail() {
       console.log('Send a message');
       router.push({
         pathname: '/chat/chat_detail',
-        params: { 
+        params: {
           chatId: conversation._id,
           id: selectedProduct?._id,
           sellerId: selectedUser?._id,
           sellerUsername: selectedUser?.username,
-          profilePhoto: selectedUser?.profilePicture }
-        })
+          profilePhoto: selectedUser?.profilePicture
+        }
+      })
     } catch (error) {
       console.error(error);
     }
@@ -142,7 +143,7 @@ export default function ProductDetail() {
   }
 
   const isSeller = user?.id === selectedUser.clerkUserId;
-  
+
   console.log(images);
   const renderImageItem = ({ item }: { item: string }) => (
     <Image source={{ uri: item }} style={styles.carouselImage} />
@@ -205,84 +206,88 @@ export default function ProductDetail() {
               style={styles.sellerImage}
             />
             <View style={styles.sellerTextContainer}>
-              <Text style={styles.sellerName}>
-                {selectedUser.firstName || 'Unknown'} {selectedUser.lastName || 'Seller'}
-              </Text>
-              <Text style={styles.selleruserName}>@{selectedUser.username || 'unknown'}</Text>
-              <View style={styles.sellerRatingContainer}>
-                {[...Array(Math.floor(selectedUser.rating.average || 0))].map((_, i) => (
-                  <Ionicons key={`full-${i}`} name="star" size={16} color="#F59E0B" />
-                ))}
-                {selectedUser.rating.average % 1 !== 0 && (
-                  <Ionicons name="star-half" size={16} color="#F59E0B" />
-                )}
-                {[...Array(5 - Math.ceil(selectedUser.rating.average || 0))].map((_, i) => (
-                  <Ionicons key={`empty-${i}`} name="star-outline" size={16} color="#F59E0B" />
-                ))}
-                <Text style={styles.sellerReviews}>({selectedUser.rating.count || 0})</Text>
-              </View>
+              <TouchableOpacity onPress={() => router.push(`/user/${selectedUser._id}`)}>
+                <Text style={styles.sellerName}>
+                  {selectedUser.firstName || 'Unknown'} {selectedUser.lastName || 'Seller'}
+                </Text>
+                <Text style={styles.selleruserName}>@{selectedUser.username || 'unknown'}</Text>
+                <View style={styles.sellerRatingContainer}>
+                  {[...Array(Math.floor(selectedUser.rating.average || 0))].map((_, i) => (
+                    <Ionicons key={`full-${i}`} name="star" size={16} color="#F59E0B" />
+                  ))}
+                  {selectedUser.rating.average % 1 !== 0 && (
+                    <Ionicons name="star-half" size={16} color="#F59E0B" />
+                  )}
+                  {[...Array(5 - Math.ceil(selectedUser.rating.average || 0))].map((_, i) => (
+                    <Ionicons key={`empty-${i}`} name="star-outline" size={16} color="#F59E0B" />
+                  ))}
+                  <Text style={styles.sellerReviews}>({selectedUser.rating.count || 0})</Text>
+
             </View>
+              </TouchableOpacity>
+
           </View>
-
-          {/* Product Details */}
-          <Text style={styles.descriptionTitle}>Description</Text>
-          <Text style={styles.descriptionText}>{selectedProduct.description || 'No description available'}</Text>
-          
-          <Text style={styles.metaText}>
-            Location: {selectedProduct.location.city?.name}, {selectedProduct.location.country?.name}
-          </Text>
-          <Text style={styles.metaText}>Category: {selectedProduct.category}</Text>
-          <Text style={styles.metaText}>Condition: {selectedProduct.condition}</Text>
-          <Text style={styles.metaTextStatus}>Status: {selectedProduct.status}</Text>
-          <Text style={styles.productPrice}>
-            {selectedProduct.price.amount} {selectedProduct.price.currency}
-          </Text>
         </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtonsContainer}>
-          {isSeller ? (
-            <>
-              <TouchableOpacity
-                style={styles.modifyButton}
-                onPress={() =>
-                  router.push({
-                    pathname: `/prod/modify_product`,
-                    params: { id: selectedProduct._id },
-                  })
-                }
-              >
-                <Text style={styles.modifyButtonText}>Modify</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteProduct}>
-                <Text style={styles.deleteButtonText}>Delete</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity style={styles.sendMessageButton} 
-                onPress={handleMessageUser}>
-                <Text style={styles.sendMessageButtonText}>Send Message</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.buyNowButton,
-                  !(isAvailable) && styles.disabledButton]}
-                disabled={!(selectedProduct.status =='Available')}
-                onPress={() =>
-                  router.push({
-                    pathname: `/purch/[id]`,
-                    params: { id: selectedProduct._id, sellerId: selectedUser.clerkUserId },
-                  })
-                }
-              >
-                <Text style={styles.buyNowButtonText} >Buy Now</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        {/* Product Details */}
+        <Text style={styles.descriptionTitle}>Description</Text>
+        <Text style={styles.descriptionText}>{selectedProduct.description || 'No description available'}</Text>
+
+        <Text style={styles.metaText}>
+          Location: {selectedProduct.location.city?.name}, {selectedProduct.location.country?.name}
+        </Text>
+        <Text style={styles.metaText}>Category: {selectedProduct.category}</Text>
+        <Text style={styles.metaText}>Condition: {selectedProduct.condition}</Text>
+        <Text style={styles.metaTextStatus}>Status: {selectedProduct.status}</Text>
+        <Text style={styles.productPrice}>
+          {selectedProduct.price.amount} {selectedProduct.price.currency}
+        </Text>
+      </View>
+
+      {/* Action Buttons */}
+      <View style={styles.actionButtonsContainer}>
+        {isSeller ? (
+          <>
+            <TouchableOpacity
+              style={styles.modifyButton}
+              onPress={() =>
+                router.push({
+                  pathname: `/prod/modify_product`,
+                  params: { id: selectedProduct._id },
+                })
+              }
+            >
+              <Text style={styles.modifyButtonText}>Modify</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteProduct}>
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity style={styles.sendMessageButton}
+              onPress={handleMessageUser}>
+              <Text style={styles.sendMessageButtonText}>Send Message</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.buyNowButton,
+              !(isAvailable) && styles.disabledButton]}
+              disabled={!(selectedProduct.status == 'Available')}
+              onPress={() =>
+                router.push({
+                  pathname: `/purch/[id]`,
+                  params: { id: selectedProduct._id, sellerId: selectedUser.clerkUserId },
+                })
+              }
+            >
+              <Text style={styles.buyNowButtonText} >Buy Now</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </ScrollView>
+    </SafeAreaView >
   );
 }
 
@@ -382,7 +387,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginBottom: 5,
   },
-  metaTextStatus:{
+  metaTextStatus: {
     fontFamily: 'PlusJakartaSans-Bold',
   },
   productPrice: {

@@ -7,6 +7,7 @@ import SettingsOverlay from '@/components/settingsOverlay';
 import { useOverlay, OverlayProvider } from '@/contexts/overlayContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useUser } from '@clerk/clerk-expo';
 
 const TabBarWithOverlay = () => {
   const { isOverlayVisible, setOverlayVisible, overlayType } = useOverlay();
@@ -106,6 +107,7 @@ const TabBarWithOverlay = () => {
 };
 
 export default function TabLayout() {
+  const { isLoaded, user} = useUser();
   return (
     <OverlayProvider>
       <TabBarWithOverlay />

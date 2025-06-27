@@ -14,8 +14,6 @@ import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import ProductCard from '@/components/productCard';
 import { useFonts } from 'expo-font';
-import { useOverlay } from '@/contexts/overlayContext';
-import { Product } from '@/services/types';
 import { useProductStore } from '@/store/product-store';
 import { useUserStore } from '@/store/user-store';
 import { categories } from '@/assets/constants/constants';
@@ -34,6 +32,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log(user, 'user from useUser');
     if (user?.id) {
       fetchProducts(user.id);
       fetchUser(user.id);
@@ -41,7 +40,7 @@ export default function Home() {
 
   }, [fetchProducts, fetchUser]);
 
-  if (!isLoaded || !fontsLoaded || isLoading) {
+  if (!isLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -53,6 +52,8 @@ export default function Home() {
     console.log('User is not signed in');
     return <Redirect href="/(auth)/signup" />;
   }
+
+  console.log('User is signed in:', USER);
 
   //filter the products to only show the products that are not created by the user
   const filteredProducts =

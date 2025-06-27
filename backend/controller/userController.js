@@ -4,11 +4,13 @@ const City = require('../models/city');
 const University = require('../models/university');
 const Product = require('../models/product');
 const { getAuth } = require('@clerk/express');
-
 const { isValidObjectId } = require('mongoose');
 
 //save user to database
 const createUser = async (req, res) => {
+  console.log('Creating User');
+  // Extract user data from request body
+  console.log('Request body:', req.body);
   const { clerkUserId, firstName, lastName, username, email, country, city, university } = req.body;
   try {
     // Validate required fields
@@ -50,7 +52,7 @@ const createUser = async (req, res) => {
 
     // Save the user to the database
     await newUser.save();
-    res.status(201).json({ success: true, message: 'User created successfully', user: newUser });
+    res.status(201).json({ success: true, message: 'User created successfully', data: newUser });
 
   } catch (error) {
     console.error('Error creating user:', error);

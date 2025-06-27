@@ -14,12 +14,11 @@ import { useProductStore } from '@/store/product-store';
 import { usePostStore } from '@/store/post-store';
 import { useFollowStore } from '@/store/follow-store';
 import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
-import { blue } from 'react-native-reanimated/lib/typescript/Colors';
 
 export default function Profile() {
 
   const { user } = useUser();
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isLoaded } = useAuth();
   const { fetchUser, isLoading: userLoading } = useUserStore();
   const { fetchProductsByClerkId, userProducts, isLoading: productLoading } = useProductStore();
   const { fetchPostsByClerkId, userPosts, isLoading: postLoading } = usePostStore();
@@ -28,7 +27,6 @@ export default function Profile() {
 
   const [userData, setUserData] = useState<User | null>(null);
   const [selectedTab, setSelectedTab] = useState('Products');
-  // const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [fontsLoaded] = useFonts({
@@ -39,6 +37,7 @@ export default function Profile() {
   const isAnyLoading = !fontsLoaded || userLoading || productLoading || postLoading || followLoading;
 
   useEffect(() => {
+    console.log('Imger URL:', user?.imageUrl);
     const loadUserData = async () => {
       if (!user?.id || !isLoaded) return;
 
@@ -81,7 +80,7 @@ export default function Profile() {
 
             <Image
 
-              source={{ uri: userData?.profilePicture }}
+              source={{ uri: user?.imageUrl }}
               style={styles.profileImage}
             />
 
@@ -134,9 +133,10 @@ export default function Profile() {
       {/* Render Products */}
       {selectedTab === 'Products' && (
         <FlatList
+          style={styles.postContainer}
           data={userProducts}
           renderItem={({ item }) => <ProductCard item={item}
-            onPress={() => router.push(`/prod/${item._id}`)} />}
+          onPress={() => router.push(`/prod/${item._id}`)} />}
           keyExtractor={(item) => item._id}
           numColumns={2}
           columnWrapperStyle={styles.productRow}
@@ -151,7 +151,7 @@ export default function Profile() {
       {/* Render Post */}
       {selectedTab === 'Post' && (
         <FlatList
-          style={styles.postContainer}
+        style={styles.postContainer}
           data={userPosts[user?.id || '']}
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => router.push({ pathname: '/post/modify_post', params: { id: item._id } })}>
@@ -165,7 +165,7 @@ export default function Profile() {
 
           )}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.postContainer}
+          contentContainerStyle={{ paddingTop: 10 }}
           ListEmptyComponent={() => (
             <View style={styles.placeholderContent}>
               <Text style={styles.placeholderText}>No post available</Text>
@@ -282,7 +282,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   postContainer: {
-    marginTop: 10,
     marginBottom: 45,
     backgroundColor: '#f9f9f9',
   },

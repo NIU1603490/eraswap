@@ -1,23 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Platform, ScrollView, Alert } from 'react-native';
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
+  Platform, ScrollView, Alert, ActivityIndicator
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Dropdown } from 'react-native-element-dropdown';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import { useUser } from '@clerk/clerk-expo';
+// import { useUser } from '@clerk/clerk-expo';
 import * as ImagePicker from 'expo-image-picker';
 import { categories, conditions, currency } from '@/assets/constants/constants';
 import { useProductStore } from '@/store/product-store';
 import { Product } from '@/services/types';
+import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
+import { uploadImage } from '@/services/imageService';
+import { set } from 'react-hook-form';
 
-const categoryData = categories.map((cat) => ({ label: cat.name, value: cat.name }));
+const categoryData = categories
+.filter((cat) => cat.name !== 'All')
+.map((cat) => ({ label: cat.name, value: cat.name }));
 const conditionData = conditions.map((cond) => ({ label: cond.name, value: cond.name }));
 
 export default function ModifyProduct() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { updateProduct, fetchProductById, selectedProduct, isLoading : loading, error } = useProductStore();
+  const { updateProduct, fetchProductById, selectedProduct, isLoading: loading, error } = useProductStore();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -29,13 +37,12 @@ export default function ModifyProduct() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
 
-
   const [fontsLoaded] = useFonts({
     'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
     'PlusJakartaSans-Bold': require('@/assets/fonts/PlusJakartaSans-Bold.ttf'),
   });
 
-  // Populate form fields when product is loaded
+
   useEffect(() => {
     if (selectedProduct) {
       setTitle(selectedProduct.title || '');
@@ -47,7 +54,7 @@ export default function ModifyProduct() {
     }
   }, [selectedProduct]);
 
-  // Fetch product by id
+  // fetch product by id
   useEffect(() => {
     if (id) {
       fetchProductById(id as string).catch((error) => {
@@ -57,17 +64,17 @@ export default function ModifyProduct() {
     }
   }, [fetchProductById, id]);
 
-  // Track unsaved changes
+  // track unsaved changes
   useEffect(() => {
     if (selectedProduct) {
-      const hasChanges = 
+      const hasChanges =
         title !== (selectedProduct.title || '') ||
         description !== (selectedProduct.description || '') ||
         category !== (selectedProduct.category || '') ||
         condition !== (selectedProduct.condition || '') ||
         price !== (selectedProduct.price?.amount?.toString() || '') ||
         JSON.stringify(images) !== JSON.stringify(selectedProduct.images || []);
-      
+
       setHasUnsavedChanges(hasChanges);
     }
   }, [title, description, category, condition, price, images, selectedProduct]);
@@ -102,21 +109,34 @@ export default function ModifyProduct() {
   };
 
   const handleUpdate = async () => {
+    setIsLoading(true);
     console.log('Starting update process...');
     console.log('Product ID:', id);
     console.log('Form data:', { title, description, category, condition, price, images });
-    
+
+    const uploadedUrls: string[] = [];
+    for (const uri of images) {
+      try {
+        const url = await uploadImage(uri);
+        uploadedUrls.push(url);
+      } catch (err) {
+        console.error('Error uploading image:', err);
+        alert('Failed to upload images');
+        return;
+      }
+
+    }
     const updates = {
       title: title.trim(),
       description: description.trim(),
       category,
       condition,
       price: { amount: parseFloat(price) },
-      images
+      images: uploadedUrls
     };
-    
+
     console.log('Sending updates:', updates);
-    
+
     try {
       const result = await updateProduct(id as string, updates as Partial<Product>);
       console.log('Update result:', result);
@@ -148,10 +168,7 @@ export default function ModifyProduct() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
       base64: false,
     });
 
@@ -167,8 +184,8 @@ export default function ModifyProduct() {
       'Are you sure you want to remove this image?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Remove', 
+        {
+          text: 'Remove',
           style: 'destructive',
           onPress: () => setImages(images.filter((_, i) => i !== index))
         }
@@ -178,9 +195,9 @@ export default function ModifyProduct() {
 
   if (!fontsLoaded || loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
+      <SafeAreaView style={HS.container}>
+        <View style={HS.loadingContainer}>
+          <Text style={HS.loadingText}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -188,9 +205,9 @@ export default function ModifyProduct() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Error loading product</Text>
+      <SafeAreaView style={HS.container}>
+        <View style={HS.errorContainer}>
+          <Text style={HS.errorText}>Error loading product</Text>
           <TouchableOpacity onPress={() => router.back()} style={styles.button}>
             <Text style={styles.buttonText}>Go Back</Text>
           </TouchableOpacity>
@@ -200,137 +217,124 @@ export default function ModifyProduct() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.sellText}>Edit Product</Text>
+    <SafeAreaView style={HS.container}>
+      <View style={HS.header2}>
+        <Text style={HS.headerTitle}>Edit Product</Text>
         <TouchableOpacity onPress={handleCancel}>
-          <Text style={styles.cancelButton}>Cancel</Text>
+          <Text style={HS.cancelButton}>Cancel</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.contentArea}>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Product Details</Text>
-            
-            <Text style={styles.fieldLabel}>Title *</Text>
-            <TextInput
-              style={styles.input}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Enter product title"
-              placeholderTextColor="#666"
-              maxLength={100}
-            />
-            
-            <Text style={styles.fieldLabel}>Description *</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Describe your product"
-              placeholderTextColor="#666"
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              maxLength={500}
+          <Text style={styles.sectionTitle}>Title </Text>
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Enter product title"
+            placeholderTextColor="#666"
+            maxLength={100}
+          />
+
+          <Text style={styles.sectionTitle}>Description</Text>
+          <TextInput
+            style={styles.input}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Describe your product"
+            placeholderTextColor="#666"
+            multiline
+            textAlignVertical="top"
+          />
+
+          <Text style={styles.sectionTitle}>Category</Text>
+          <View style={styles.pickerContainer}>
+            <Dropdown
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              data={categoryData}
+              labelField="label"
+              valueField="value"
+              placeholder="Select category"
+              value={category}
+              onChange={(item) => setCategory(item.value)}
+              fontFamily="PlusJakartaSans-Regular"
+              containerStyle={styles.dropdownContainer}
             />
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Category & Condition</Text>
-            
-            <Text style={styles.fieldLabel}>Category *</Text>
-            <View style={styles.pickerContainer}>
-              <Dropdown
-                style={styles.dropdown}
-                placeholderStyle={styles.placeholderStyle}
-                selectedTextStyle={styles.selectedTextStyle}
-                data={categoryData}
-                labelField="label"
-                valueField="value"
-                placeholder="Select category"
-                value={category}
-                onChange={(item) => setCategory(item.value)}
-                fontFamily="PlusJakartaSans-Regular"
-                containerStyle={styles.dropdownContainer}
-              />
-            </View>
-
-            <Text style={styles.fieldLabel}>Condition *</Text>
-            <View style={styles.pickerContainer}>
-              <Dropdown
-                style={styles.dropdown}
-                placeholderStyle={styles.placeholderStyle}
-                selectedTextStyle={styles.selectedTextStyle}
-                data={conditionData}
-                labelField="label"
-                valueField="value"
-                placeholder="Select condition"
-                value={condition}
-                onChange={(item) => setCondition(item.value)}
-                fontFamily="PlusJakartaSans-Regular"
-                containerStyle={styles.dropdownContainer}
-              />
-            </View>
+          <Text style={styles.sectionTitle}>Condition</Text>
+          <View style={styles.pickerContainer}>
+            <Dropdown
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              data={conditionData}
+              labelField="label"
+              valueField="value"
+              placeholder="Select condition"
+              value={condition}
+              onChange={(item) => setCondition(item.value)}
+              fontFamily="PlusJakartaSans-Regular"
+              containerStyle={styles.dropdownContainer}
+            />
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Photos ({images.length}/5) *</Text>
-            <Text style={styles.sectionSubtitle}>Add up to 5 photos of your product</Text>
-            
-            <View style={styles.photoGrid}>
-              {images.map((photo, index) => (
-                <View key={index} style={styles.photoContainer}>
-                  <Image source={{ uri: photo }} style={styles.photoImage} />
-                  <TouchableOpacity 
-                    style={styles.removeImageButton}
-                    onPress={() => handleRemoveImage(index)}
-                  >
-                    <Ionicons name="close-circle" size={24} color="red" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              
-              {images.length < 5 && (
-                <TouchableOpacity style={styles.photoPlaceholder} onPress={handleAddImages}>
-                  <Ionicons name="camera" size={32} color="#666" />
-                  <Text style={styles.addPhotoText}>Add Photo</Text>
+
+
+          <Text style={styles.sectionTitle}>Photos ({images.length}/5) *</Text>
+          <Text style={styles.sectionSubtitle}>Add up to 5 photos of your product</Text>
+
+          <View style={styles.photoGrid}>
+            {images.map((photo, index) => (
+              <View key={index} style={styles.photoContainer}>
+                <Image source={{ uri: photo }} style={styles.photoPlaceholder} />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => handleRemoveImage(index)}
+                >
+                  <Ionicons name="trash" size={18} color="white" />
                 </TouchableOpacity>
-              )}
-            </View>
+              </View>
+            ))}
+
+            {images.length < 5 && (
+              <TouchableOpacity style={styles.photoPlaceholder} onPress={handleAddImages}>
+                <Ionicons name="add" size={24} color="#666" />
+                <Text style={styles.addPhotoText}>Add Photo</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Pricing</Text>
-            
-            <Text style={styles.fieldLabel}>Price *</Text>
-            <View style={styles.priceSection}>
-              <TextInput
-                style={styles.priceInput}
-                value={price}
-                onChangeText={setPrice}
-                placeholder="0"
-                placeholderTextColor="#666"
-                keyboardType="numeric"
-              />
-              <Text style={styles.currency}> EUR </Text>
-            </View>
+          <Text style={styles.sectionTitle}>Price</Text>
+          <View style={styles.priceSection}>
+            <TextInput
+              style={styles.priceInput}
+              value={price}
+              onChangeText={setPrice}
+              placeholder="0"
+              placeholderTextColor="#666"
+              keyboardType="numeric"
+            />
+            <Text style={styles.currency}> EUR </Text>
           </View>
+
         </View>
       </ScrollView>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[
-            styles.button,
+            HS.publishButton,
             (!isFormValid() || isLoading) && styles.disabledButton
           ]}
           onPress={handleUpdate}
           disabled={!isFormValid() || isLoading}
         >
           <Text style={[
-            styles.buttonText,
+            HS.publishButtonText,
             (!isFormValid() || isLoading) && styles.disabledButtonText
           ]}>
             {isLoading ? 'Updating...' : 'Save Changes'}
@@ -342,66 +346,27 @@ export default function ModifyProduct() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'PlusJakartaSans-Regular',
-    color: '#666',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    fontFamily: 'PlusJakartaSans-Regular',
-    color: 'red',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
-  },
-  cancelButton: {
-    fontSize: 16,
-    color: '#FF3B30',
-    fontFamily: 'PlusJakartaSans-Bold',
-  },
-  sellText: {
-    fontSize: 20,
-    fontFamily: 'PlusJakartaSans-Bold',
-    color: '#000',
-  },
   scrollView: {
     flex: 1,
   },
   contentArea: {
-    padding: 16,
+    padding: 10,
+    gap: 15,
+    margin: 10,
   },
   section: {
     marginBottom: 24,
   },
-  sectionTitle: {
-    fontSize: 18,
+  prompt: {
+    fontSize: 16,
+    color: '#666',
+    margin: 10,
     fontFamily: 'PlusJakartaSans-Bold',
-    color: '#000',
-    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    color: '#666',
+    fontFamily: 'PlusJakartaSans-Bold',
   },
   sectionSubtitle: {
     fontSize: 14,
@@ -409,35 +374,26 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 16,
   },
-  fieldLabel: {
-    fontSize: 14,
-    fontFamily: 'PlusJakartaSans-Bold',
-    color: '#000',
-    marginBottom: 8,
-    marginTop: 8,
-  },
   input: {
     borderWidth: 1,
-    borderColor: '#E5E5E7',
-    borderRadius: 12,
+    borderColor: '#eee',
+    borderRadius: 10,
     padding: 16,
+    marginBottom: 10,
     fontSize: 16,
     fontFamily: 'PlusJakartaSans-Regular',
-    backgroundColor: '#FAFAFA',
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#E5E5E7',
-    borderRadius: 12,
-    backgroundColor: '#FAFAFA',
+    borderColor: '#eee',
+    borderRadius: 10,
+    marginBottom: 10,
+    height: 50,
+    justifyContent: 'center',
   },
   dropdown: {
-    height: 54,
-    paddingHorizontal: 16,
+    height: 50,
+    paddingHorizontal: 10,
   },
   placeholderStyle: {
     fontSize: 16,
@@ -451,9 +407,9 @@ const styles = StyleSheet.create({
   },
   dropdownContainer: {
     borderWidth: 1,
-    borderColor: '#E5E5E7',
-    borderRadius: 12,
-    marginTop: 4,
+    borderColor: '#eee',
+    borderRadius: 10,
+    marginTop: 5,
   },
   photoGrid: {
     flexDirection: 'row',
@@ -467,17 +423,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
-  photoImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 12,
-  },
   removeImageButton: {
     position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Darker background for contrast
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   photoPlaceholder: {
     width: 100,
@@ -486,7 +441,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#E5E5E7',
     borderStyle: 'dashed',
   },
@@ -539,5 +494,18 @@ const styles = StyleSheet.create({
   },
   disabledButtonText: {
     color: '#999',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  overlayText: {
+    marginTop: 12,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

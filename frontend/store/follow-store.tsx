@@ -24,7 +24,6 @@ export const useFollowStore = create<FollowState>((set, get) => ({
     try {
       console.log('GET FOLLOWERS');
       const response = await api.get(`/follows/followers/${userId}`);
-      console.log(response);
       const followers = response.data.followers || [];
       set({ followers, isLoading: false });
       return followers;

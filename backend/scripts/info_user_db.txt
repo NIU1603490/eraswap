@@ -1,0 +1,10 @@
+{"_id":{"$oid":"68207ea00fb2ea508d682f6e"},
+"clerkUserId":"user_2wwkTPfuGMTb9LmLV8OzIoo4c0W",
+"firstName":"javi","lastName":"alvarez","username":"alvarezz",
+"email":"javi@gmail.com","country":{"$oid":"680b56ebef65b11b78aa2970"},
+"city":{"$oid":"680b56ebef65b11b78aa297c"},
+"university":{"$oid":"680b56ebef65b11b78aa2988"},
+"profilePicture":"https://www.gravatar.com/avatar/?d=mp",
+"savedProducts":[{"$oid":"68271a383cdf791b1411176e"},
+{"$oid":"682d8293183c277965ba90cd"},{"$oid":"682cf800340ed52dda64015f"}],
+"rating":{"average":{"$numberInt":"0"},"count":{"$numberInt":"0"}},"__v":{"$numberInt":"3"}}

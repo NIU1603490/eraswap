@@ -10,42 +10,37 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { styles } from '../../assets/constants/auth_styles';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { Dropdown } from 'react-native-element-dropdown';
-import { saveUser } from '../../services/authService';
 import { Country, City, University, SignUpData, FormData } from '../../services/types';
 import { useAuth, useSignUp, useClerk } from '@clerk/clerk-expo';
 import { useForm, Controller } from 'react-hook-form';
 import { useLocationStore } from '@/store/location-store';
+import { useUserStore } from '@/store/user-store';
 import Toast from 'react-native-toast-message';
+import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 
 export default function SignUp() {
   const router = useRouter();
-  const {
-    countries,
-    cities,
-    universities,
-    fetchCountries,
-    fetchCities,
-    fetchUniversities,
+  const { countries, cities, universities,
+    fetchCountries, fetchCities, fetchUniversities,
   } = useLocationStore();
+
+  const { saveUser } = useUserStore();
   const { isLoaded, signUp } = useSignUp();
   const { isSignedIn } = useAuth();
   const { setActive } = useClerk();
   const scrollViewRef = useRef<ScrollView>(null);
 
-
-  console.log('isSignedIn:', isSignedIn);
-
   if (isSignedIn) {
     return <Redirect href="/home" />;
   }
-
   
   const {
     control,
@@ -69,15 +64,14 @@ export default function SignUp() {
   });
 
   // Dropdown states
-
   const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null);
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Watch form values for cascading dropdowns
-  const country = watch('country');
-  const city = watch('city');
+  // const country = watch('country');
+  // const city = watch('city');
 
   // Load countries
   useEffect(() => {
@@ -149,15 +143,16 @@ export default function SignUp() {
         firstName: data.firstName,
         lastName: data.lastName, // Added lastName
       });
-      console.log('Clerk signUp result:', JSON.stringify(result, null, 2));
+      // console.log('Clerk signUp result:', JSON.stringify(result, null, 2));
 
       // Ensure Clerk user ID exists
       if (!result.createdUserId) {
         throw new Error('User ID is missing from Clerk response');
       }
 
+      console.log('Clerk user created:', result.createdUserId);
       // Save user to MongoDB
-      await saveUser({
+      const res = await saveUser({
         clerkUserId: result.createdUserId,
         firstName: data.firstName,
         lastName: data.lastName,
@@ -168,6 +163,8 @@ export default function SignUp() {
         university: data.university, // ObjectId
       });
 
+      console.log('User saved to MongoDB:', res);
+
       // Handle signup status
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
@@ -176,7 +173,8 @@ export default function SignUp() {
       }
     } catch (error: any) {
       console.error('Signup error:', error);
-      setError(error);
+      setError(error.message || 'An error occurred during sign-up. Please try again.');
+      Alert.alert('Sign-up Error', error.message || 'An error occurred during sign-up. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -185,6 +183,8 @@ export default function SignUp() {
   // Form submission
   const onSubmit = (data: FormData) => {
     console.log('onSubmit called with data:', data);
+
+    // Validate required fields
     if (!data.agreeTerms) {
       setError('You must agree to the terms');
       Toast.show({ type: 'error', text1: 'You must agree to the terms' });
@@ -222,6 +222,14 @@ export default function SignUp() {
     handleSubmit(onSubmit)();
   };
 
+  if(!isLoaded || isLoading) {
+    return (
+      <View style={HS.loadingContainer}>
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </View>
+    );
+  }
+
   return (
     <LinearGradient colors={['#1E88E5', '#93BFD9', '#FFD663']} style={styles.gradient}>
       <SafeAreaView style={styles.container}>
@@ -235,9 +243,6 @@ export default function SignUp() {
                   Already have an account?
                 </Link>
               </View>
-
-              {error && <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{error}</Text>}
-              {isLoading && <ActivityIndicator size="large" color="#3b82f6" style={{ marginVertical: 10 }} />}
 
               {/* First Name and Last Name */}
               <View style={styles.inputRow}>
@@ -521,6 +526,9 @@ export default function SignUp() {
                   <Text style={styles.termsLink}>Privacy Policy</Text>
                 </Text>
               </View>
+
+
+              {error && <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{error}</Text>}
 
               {/* Sign-up Button */}
               <TouchableOpacity

@@ -2,20 +2,19 @@ const Follow = require('../models/follow');
 const User = require('../models/user');
 
 const followUser = async (req, res) => {
-    console.log('FOLLOW')
+    console.log('FOLLOW');
     //  user who wants to follow -->  follower
-    // ID of the user to be followed --> following
+    //  user to be followed --> following
     try {
         const { followerId } = req.body; //  user who wants to follow
         console.log(followerId);
-        const followingId = req.params.id; // ID of the user to be followed
+        const followingId = req.params.id; // user to be followed
         console.log(followingId);
         console.log('This:', followerId, 'want to follow:', followingId);
         
         // Check if the follower and following are the same
         console.log(followerId.toString() === followingId.toString())
         if (followerId.toString() === followingId.toString()) {
-            console.log('1');
             return res.status(400).json({ 
                 success: false,
                 message: 'Follower and following cannot be the same'
@@ -23,10 +22,9 @@ const followUser = async (req, res) => {
         }
 
         // Check if the user to be followed exists
-        const userFollower = await User.findOne({ _id: followingId });
-        console.log('User found', userFollower);
+        const userToFollow = await User.findOne({ _id: followingId });
         
-        if (!userFollower) {
+        if (!userToFollow) {
             return res.status(404).json({ 
                 success: false,
                 message: 'User not found'
@@ -34,10 +32,9 @@ const followUser = async (req, res) => {
         }
 
         // Check if the user who wants to follow exists
-        const userFollowing = await User.findOne({ _id: followerId });
-        console.log('User found', userFollowing);
+        const followerUser = await User.findOne({ _id: followerId });
         
-        if (!userFollowing) {
+        if (!followerUser) {
             return res.status(404).json({ 
                 success: false,
                 message: 'User not found'
@@ -46,8 +43,8 @@ const followUser = async (req, res) => {
 
         // Check if the follow relationship already exists
         const existingFollow = await Follow.findOne({
-            follower: userFollower,
-            following: userFollowing
+            follower: followerUser,
+            following: userToFollow,
         });
 
         if (existingFollow) {
@@ -57,8 +54,8 @@ const followUser = async (req, res) => {
         }
         // Create a new follow relationship
         const newFollow = new Follow({
-            follower: userFollower,
-            following: userFollowing
+            follower: followerUser,
+            following: userToFollow,
         });
 
         await newFollow.save();
@@ -79,12 +76,15 @@ const followUser = async (req, res) => {
 }
 
 const unfollowUser = async (req, res) => {
+    console.log('UNFOLLOW');
     try {
         const { followerId } = req.body; // user who want to unfollow
         const followingId = req.params.id; // ID of the user to be unfollowed
+        console.log('Follower ID:', followerId);
+        console.log('Following ID:', followingId);
 
         // Check if the follower and following are the same
-        if (followerId.toString() === followingId) {
+        if (followerId.toString() === followingId.toString()) {
             return res.status(400).json({ 
                 success: false,
                 message: 'Follower and following cannot be the same'
@@ -92,16 +92,21 @@ const unfollowUser = async (req, res) => {
         }
 
         // Check if the follow relationship exists
+        console.log('Checking existing follow relationship...');
         const existingFollow = await Follow.findOne({
             follower: followerId,
             following: followingId
         });
+
         if (!existingFollow) {
+            console.log('No existing follow relationship found');
             return res.status(404).json({ 
                 success: false,
                 message: 'Not following this user'
             });
         }
+
+        console.log('Existing follow:', existingFollow);
 
         await Follow.deleteOne({
             follower: followerId,
@@ -126,10 +131,9 @@ const unfollowUser = async (req, res) => {
 const getFollowers = async (req, res) => {
     console.log('GET FOLLOWERS');
     try {
-        const userId = req.params.id; 
+        const userId = req.params.id; //object id
         console.log(userId);
-        // Check if the user exists
-        const user = await User.findOne({clerkUserId: userId});
+        const user = await User.findOne({ _id: userId});
         console.log(user);
         if (!user) {
             return res.status(404).json({ 
@@ -138,8 +142,8 @@ const getFollowers = async (req, res) => {
             });
         }
 
-        const followers = await Follow.find({ follower: user._id })
-            .populate('follower', 'name profilePicture ') // Populate follower details
+        const followers = await Follow.find({ following: user._id })
+            .populate('follower', 'name username profilePicture ') // Populate follower details
             .sort({ createdAt: -1 }); // Sort by most recent
         
         console.log(followers); 
@@ -165,9 +169,9 @@ const getFollowing = async (req, res) => {
     console.log('GET FOLLOWING');
     try {
         const userId = req.params.id; 
-
+        console.log(userId);
         // Check if the user exists
-        const user = await User.findOne({clerkUserId: userId});
+        const user = await User.findOne({_id: userId});
         if (!user) {
             return res.status(404).json({ 
                 success: false,
@@ -175,7 +179,7 @@ const getFollowing = async (req, res) => {
             });
         }
 
-        const following = await Follow.find({ following: user._id })
+        const following = await Follow.find({ follower: user._id })
             .populate('following', 'name profilePicture') // Populate following details
             .sort({ createdAt: -1 }); // Sort by most recent
         

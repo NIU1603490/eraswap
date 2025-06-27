@@ -1,3 +1,4 @@
+
 const Product = require('../models/product.js');
 const User = require('../models/user.js');
 //const Transaction = require('../models/transaction.js');
@@ -54,7 +55,7 @@ const createProduct = async (req, res) => {
         description,
         price: {
           amount: price,
-          currency: 'NOK',
+          currency: 'EUR',
         },
         category,
         images: images || [],

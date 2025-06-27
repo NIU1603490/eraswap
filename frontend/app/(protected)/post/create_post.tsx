@@ -17,6 +17,7 @@ export default function create_post() {
 
   const [postText, setPostText] = useState('');
   const [image, setImage] = useState('');
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const [fontsLoaded] = useFonts({
     'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
@@ -74,6 +75,12 @@ export default function create_post() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView style={HS.container}>
+        {isPublishing && (
+          <View style={styles.overlay}>
+            <ActivityIndicator size="large" color="#fff" />
+            <Text style={styles.overlayText}>Publishing...</Text>
+          </View>
+        )}
         <View style={HS.header2}>
           <Text style={HS.headerTitle}> Post </Text>
           <TouchableOpacity onPress={handleCancel}>
@@ -117,7 +124,7 @@ export default function create_post() {
           <TouchableOpacity
             onPress={handlePublish}
             disabled={!postText || isLoading}
-            style={[HS.publishButton, (!postText || isLoading) && HS.disabledButton]}
+            style={[HS.publishButton, (!postText || isLoading || isPublishing) && HS.disabledButton]}
           >
             {isLoading ? (
               <ActivityIndicator size="small" color="#007aff" />
@@ -204,5 +211,18 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     marginLeft: 10,
     fontFamily: 'PlusJakartaSans-Regular',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  overlayText: {
+    marginTop: 12,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

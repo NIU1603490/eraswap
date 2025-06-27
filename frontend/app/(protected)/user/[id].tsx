@@ -13,19 +13,20 @@ import { useProductStore } from '@/store/product-store';
 import { useFollowStore } from '@/store/follow-store';
 import { usePostStore } from '@/store/post-store';
 import { User } from '@/services/types';
+import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
+import { set } from 'react-hook-form';
 
 export default function OtherProfile() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id } = useLocalSearchParams<{ id: string }>(); //Object id
   const router = useRouter();
   const { user } = useUser();
 
-  const { fetchObjectUser, fetchUser, user: current, selectedUser} = useUserStore();
+  const { fetchObjectUser, fetchUser, user: current, selectedUser } = useUserStore();
   const { fetchProductsByClerkId, userProducts } = useProductStore();
   const { fetchPostsByClerkId, userPosts } = usePostStore();
-  const { followers, following, fetchFollowers, fetchFollowing, followUser, unfollowUser } = useFollowStore();
+  const { followers, following, isLoading, fetchFollowers, fetchFollowing, followUser, unfollowUser } = useFollowStore();
 
   const [profileData, setProfileData] = useState<User | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedTab, setSelectedTab] = useState('Products');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,13 +40,12 @@ export default function OtherProfile() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      if (!id) 
+      if (!id)
         return;
       try {
         if (user?.id) {
           await fetchUser(user.id);
-          // setCurrentUser(myData);
-          if(id == current?._id){
+          if (id == current?._id) {
             router.push('/profile');
           }
         }
@@ -54,7 +54,6 @@ export default function OtherProfile() {
 
         await fetchProductsByClerkId(profile.clerkUserId);
         await fetchPostsByClerkId(profile.clerkUserId);
-
         await fetchFollowers(id as string);
         await fetchFollowing(id as string);
 
@@ -63,8 +62,8 @@ export default function OtherProfile() {
         Toast.show({ type: 'error', text1: err.message });
       } finally {
         setLoading(false);
-        console.log(current);
-        console.log(selectedUser);
+        console.log('current:', current);
+        console.log('selectedUser', selectedUser);
       }
     };
     loadData();
@@ -72,144 +71,149 @@ export default function OtherProfile() {
 
   useEffect(() => {
     if (current) {
-      setIsFollowing(following.some(f => f._id === current._id));
+      setIsFollowing(followers.some(f => f._id === current._id));
     }
-  }, [following, current]);
+  }, [followers, current]);
 
   const handleFollowToggle = async () => {
+    console.log('handleFollowToggle called');
+
     if (!current || !id) return;
+
+    //optimistic update
+    if (isFollowing) {
+      useFollowStore.setState({ followers: followers.filter(u => u._id !== current._id) });
+    } else {
+      useFollowStore.setState({ followers: [...followers, current] });
+    }
     try {
+      console.log('isFollowing:', isFollowing);
       if (isFollowing) {
-        await unfollowUser(current._id, id as string);
+        await unfollowUser(current._id, id);
       } else {
-        console.log('follow function');
-        console.log(current._id);
-        await followUser(current._id, id as string);
+        await followUser(current._id, id);
       }
-      await fetchFollowers(id as string);
-      await fetchFollowing(id as string);
+      await fetchFollowers(id);
+      // await fetchFollowing(id);
     } catch (err: any) {
-      Toast.show({ type: 'error', text1: err.message });
+      setError(err.message || 'Error to toggle follow status');
+      await fetchFollowers(id);
     }
   };
 
   if (!fontsLoaded || loading) {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Loading...</Text>
+        <ActivityIndicator size="large" color="#3D5AF1" />
       </SafeAreaView>
     );
   }
 
-//   if (error || !current || !selectedUser) {
-//     return (
-//       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-//         <Text>{error || 'User not found'}</Text>
-//       </SafeAreaView>
-//     );
-//   }
+  if (error) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>{error || 'User not found'}</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView>
       <View>
-      <View style={styles.header}>
+        <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#1F2937" />
           </TouchableOpacity>
           <View style={{ width: 24 }} />
-      </View>
+        </View>
 
-      <View style={styles.profileContainer}>
-        <View style={styles.followStats}>
-          <View style={styles.followItem}>
-            <Text style={styles.followCount}>{followers.length}</Text>
-            <Text style={styles.followLabel}>followers</Text>
-          </View>
+        <View style={styles.profileContainer}>
+          <View style={styles.followStats}>
+            <View style={styles.followItem}>
+              <Text style={styles.followCount}>{followers.length}</Text>
+              <Text style={styles.followLabel}>followers</Text>
+            </View>
 
-          <Image source={{ uri: selectedUser?.profilePicture }} style={styles.profileImage} />
+            <Image source={{ uri: selectedUser?.profilePicture }} style={styles.profileImage} />
 
-          <View style={styles.followItem}>
-            <Text style={styles.followCount}>{following.length}</Text>
-            <Text style={styles.followLabel}>following</Text>
+            <View style={styles.followItem}>
+              <Text style={styles.followCount}>{following.length}</Text>
+              <Text style={styles.followLabel}>following</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <Text style={styles.username}>{selectedUser?.firstName}</Text>
-      <Text style={styles.handle}>@{selectedUser?.username}</Text>
-      <View style={styles.locationContainer}>
-        <Ionicons name="location-outline" size={16} color="black" />
-        <Text style={styles.locationText}>{selectedUser?.country.name.toUpperCase()}, {profileData?.city.name.toUpperCase()}</Text>
-      </View>
+        <Text style={styles.username}>{selectedUser?.firstName}</Text>
+        <Text style={styles.handle}>@{selectedUser?.username}</Text>
+        <View style={styles.locationContainer}>
+          <Ionicons name="location-outline" size={16} color="black" />
+          <Text style={styles.locationText}>{selectedUser?.country.name.toUpperCase()}, {profileData?.city.name.toUpperCase()}</Text>
+        </View>
 
-        {!current ? (
-            <ActivityIndicator size="small" color="black" />
-            ) : (
-              <View style={styles.actionButtons
+        {/* Buttons */}
 
-              }>
-                <TouchableOpacity style={styles.actionButton} onPress={handleFollowToggle}>
-                <Text style={styles.actionButtonText}>
-                {isFollowing ? 'Unfollow' : 'Follow'}
-                </Text>
-            </TouchableOpacity>
-
-              </View>
-            
-            )}
-
-      <View style={styles.tabContainer}>
-        {['Products', 'Post', 'Reviews'].map((tab) => (
-          <TouchableOpacity key={tab} style={styles.tabButton} onPress={() => setSelectedTab(tab)}>
-            <Text style={[styles.tabText, selectedTab === tab && styles.tabTextSelected]}>
-              {tab}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity style={[styles.actionButton, isFollowing && styles.unfollowButton]}
+            onPress={handleFollowToggle}>
+            <Text style={[styles.actionButtonText, , isFollowing && styles.unfollowButtonText]}>
+              {isFollowing ? 'Unfollow' : 'Follow'}
             </Text>
-            {selectedTab === tab && <View style={styles.tabUnderline} />}
           </TouchableOpacity>
-        ))}
-      </View>
+        </View>
 
-      {selectedTab === 'Products' && (
-        <FlatList
-          data={userProducts}
-          renderItem={({ item }) => (
-            <ProductCard item={item} onPress={() => router.push(`/prod/${item._id}`)} />
-          )}
-          keyExtractor={(item) => item._id}
-          numColumns={2}
-          columnWrapperStyle={styles.productRow}
-          ListEmptyComponent={() => (
-            <View style={styles.placeholderContent}>
-              <Text style={styles.placeholderText}>No products available</Text>
-            </View>
-          )}
-        />
-      )}
 
-      {/* Render Post */}
-      {selectedTab === 'Post' && (
-        <FlatList
-          style={styles.postContainer}
-          data={userPosts[user?.id || '']}
-          renderItem={({ item }) => (
-            <TouchableOpacity>
-              <PostCard
-                post={item}
-                onLikePress={() => {}}
-                onProfilePress={() => {}}
-              />
+        <View style={styles.tabContainer}>
+          {['Products', 'Post', 'Reviews'].map((tab) => (
+            <TouchableOpacity key={tab} style={styles.tabButton} onPress={() => setSelectedTab(tab)}>
+              <Text style={[styles.tabText, selectedTab === tab && styles.tabTextSelected]}>
+                {tab}
+              </Text>
+              {selectedTab === tab && <View style={styles.tabUnderline} />}
             </TouchableOpacity>
+          ))}
+        </View>
 
-          )}
-          keyExtractor={(item) => item._id}
-          ListEmptyComponent={() => (
-            <View style={styles.placeholderContent}>
-              <Text style={styles.placeholderText}>No post available</Text>
-            </View>
-          )}
-        />
-      )}
-    </View>
+        {selectedTab === 'Products' && (
+          <FlatList
+            data={userProducts}
+            renderItem={({ item }) => (
+              <ProductCard item={item} onPress={() => router.push(`/prod/${item._id}`)} />
+            )}
+            keyExtractor={(item) => item._id}
+            numColumns={2}
+            columnWrapperStyle={styles.productRow}
+            ListEmptyComponent={() => (
+              <View style={styles.placeholderContent}>
+                <Text style={styles.placeholderText}>No products available</Text>
+              </View>
+            )}
+          />
+        )}
+
+        {/* Render Post */}
+        {selectedTab === 'Post' && (
+          <FlatList
+            style={styles.postContainer}
+            data={userPosts[user?.id || '']}
+            renderItem={({ item }) => (
+              <TouchableOpacity>
+                <PostCard
+                  post={item}
+                  onLikePress={() => { }}
+                  onProfilePress={() => { }}
+                />
+              </TouchableOpacity>
+
+            )}
+            keyExtractor={(item) => item._id}
+            ListEmptyComponent={() => (
+              <View style={styles.placeholderContent}>
+                <Text style={styles.placeholderText}>No post available</Text>
+              </View>
+            )}
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -279,17 +283,29 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   actionButton: {
-    borderWidth: 1,
-    borderColor: '#000',
     borderRadius: 20,
     width: '40%',
     paddingVertical: 6,
     marginHorizontal: 10,
+    backgroundColor: '#54a7ff',
+  },
+  unfollowButton: {
+    borderWidth: 1,
+    borderColor: '#000',
+    backgroundColor: '#f0f0f0',
+    color: '#000',
   },
   actionButtonText: {
     textAlign: 'center',
     fontSize: 12,
     fontFamily: 'PlusJakartaSans-Regular',
+    color: 'white',
+  },
+  unfollowButtonText: {
+    textAlign: 'center',
+    fontSize: 12,
+    fontFamily: 'PlusJakartaSans-Regular',
+    color: '#000',
   },
   tabContainer: {
     flexDirection: 'row',

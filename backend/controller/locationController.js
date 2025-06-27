@@ -70,30 +70,4 @@ const getUniversitiesbyID = async (req, res) => {
     }
 }
 
-// //get cities
-// const getCities = async (req, res) => {
-//     try {
-//         const cities = await City.find()
-//         .populate('country', 'name')
-//         .sort({ name: 1 });
-//         res.status(200).json({success: true, count: cities.length, cities});
-//     } catch (error) {
-//         res.status(500).json({success: false, message: 'Internal Server Error', error: error.message});
-//     }
-// }
-// //get universities
-// const getUniversities = async (req, res) => {
-//     try {
-//         const universities = await University.find()
-//         .populate('city', 'name')
-//         .populate('country', 'name')
-//         .sort({ name: 1 });
-//         res.status(200).json({success: true, count: universities.length, universities});
-//     } catch (error) {
-//         res.status(500).json({success: false, message: 'Internal Server Error', error: error.message});
-//     }
-// }
-
-
-
 module.exports = { getCountries, getCitiesbyID, getUniversitiesbyID };

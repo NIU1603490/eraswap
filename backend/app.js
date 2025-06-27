@@ -22,10 +22,10 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded request bo
 app.use(clerkMiddleware());
 
 // Routes 
-app.use('/api/locations', locationRoutes); // Location routes
-app.use('/api/users', requireAuth(), userRoutes); // User routes
-app.use('/api/products', requireAuth(), productRoutes); // Product routes
-app.use('/api/transactions', requireAuth(), transactionRoutes); // Transaction routes
+app.use('/api/locations', locationRoutes); 
+app.use('/api/users', userRoutes); 
+app.use('/api/products', requireAuth(), productRoutes); 
+app.use('/api/transactions', requireAuth(), transactionRoutes);
 app.use('/api/follows', requireAuth(), followRoutes);
 app.use('/api/posts', requireAuth(), postRoutes);
 app.use('/api/images', imageRoutes);

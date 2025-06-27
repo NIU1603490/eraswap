@@ -85,7 +85,7 @@ export const SharedHeaderStyles = StyleSheet.create({
     },
     publishButtonText: {
         color: '#FFFFFF',
-        fontSize: 14,
+        fontSize: 16,
         fontFamily: 'PlusJakartaSans-Bold',
     },
     disabledButton: {

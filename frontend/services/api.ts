@@ -7,10 +7,11 @@ import { fetchAuthToken } from './authToken';
 //const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.1.217.136:5000/api';
 //const BASE_URL = 'http://10.0.2.2:5000/api'
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+// const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 //const BASE_URL = 'https://eraswap.onrender.com/api'
 
-
+const DEFAULT_BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || DEFAULT_BASE_URL;
 
 console.log('API Base URL:', BASE_URL);
 

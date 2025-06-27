@@ -29,9 +29,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   updateProfile: async (clerkUserId: string, updates: Partial<UserData>) => {
     set({ isLoading: true, error: null });
     try {
-
       const response = await api.patch(`/users/${clerkUserId}`, updates);
-
       set((state) => ({
         user: state.user ? { ...state.user, ...response.data.user } : null,
         isLoading: false,
@@ -43,16 +41,19 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   saveUser: async (userData: any) => {
+    console.log('Saving user data:', userData);
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post('/users', userData);
+      const response = await api.post('users/create', userData);
+      console.log('saveUser response:', JSON.stringify(response.data, null, 2));
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to save user');
       }
-      set((state) => ({
+      console.log('User:', response);
+      set({
         user: response.data.data,
         isLoading: false,
-      }));
+      });
       return response.data.data;
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Error creating user';

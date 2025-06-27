@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Platform } from 'react-native';
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
+  Platform, TouchableWithoutFeedback, Keyboard, ActivityIndicator,
+  Alert
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Dropdown } from 'react-native-element-dropdown';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import { useUser} from '@clerk/clerk-expo';
+import { useUser } from '@clerk/clerk-expo';
 import * as ImagePicker from 'expo-image-picker';
 import { categories, conditions } from '@/assets/constants/constants';
 import { useProductStore } from '@/store/product-store';
@@ -13,7 +17,9 @@ import { uploadImage } from '@/services/imageService';
 import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 // Format de les categories i condicions per al Dropdown
-const categoryData = categories.map((cat) => ({ label: cat.name, value: cat.name }));
+const categoryData = categories
+.filter((cat) => cat.name !== 'All')
+.map((cat) => ({ label: cat.name, value: cat.name }));
 const conditionData = conditions.map((cond) => ({ label: cond.name, value: cond.name }));
 
 export default function CreateProduct() {
@@ -27,6 +33,7 @@ export default function CreateProduct() {
   const [condition, setCondition] = useState('');
   const [price, setPrice] = useState('');
   const [images, setImages] = useState<string[]>([]);
+  const [isPublishing, setIsPublishing] = useState(false);
 
 
   const [fontsLoaded] = useFonts({
@@ -34,12 +41,13 @@ export default function CreateProduct() {
     'PlusJakartaSans-Bold': require('@/assets/fonts/PlusJakartaSans-Bold.ttf'),
   });
 
-  
+
   const handleCancel = () => {
     router.back();
   };
 
   const handlePublish = async () => {
+    setIsPublishing(true);
     if (!title.trim() || !description.trim() || !category || !condition || !price || images.length === 0) {
       alert('Please fill all required fields, including at least one image.');
       return;
@@ -61,27 +69,36 @@ export default function CreateProduct() {
         return;
       }
 
-    } 
+    }
 
-    const productData = { 
+    const productData = {
       title,
       description,
       price: parseFloat(price),
       category,
       condition,
       images: uploadedUrls,
-      seller: user.id };
+      seller: user.id
+    };
 
     try {
+      console.log('Creating product with data:', productData);
       const response = await createProduct(productData);
-      if(response) {
-        router.push('/home');
-        alert('Product created successfully');
+      if (response) {
+        Alert.alert(
+          'Product created successfully',
+          '',
+          [
+            { text: 'OK', onPress: () => router.replace('/home') }
+          ]
+        );
       }
-      
+
     } catch (error) {
       console.error('Error creating product:', error);
       alert('Failed to create product. Please try again.');
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -92,7 +109,6 @@ export default function CreateProduct() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      // mediaTypes: ['images'],
       allowsEditing: true,
       base64: true,
     });
@@ -115,112 +131,113 @@ export default function CreateProduct() {
     return null;
   }
 
+
   return (
-    <SafeAreaView style={HS.container}>
-      <View style={HS.header2}>
-        <Text style={HS.headerTitle}>Sell</Text>
-        <TouchableOpacity onPress={handleCancel}>
-          <Text style={styles.cancelButton}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.contentArea}>
-        <Text style={styles.prompt}>What are you selling?</Text>
-        <TextInput
-          style={styles.input}
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Title"
-          placeholderTextColor="#666"
-        />
-        <TextInput
-          style={styles.input}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Description"
-          placeholderTextColor="#666"
-          multiline
-        />
-        <View style={styles.pickerContainer}>
-          <Dropdown
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            data={categoryData}
-            labelField="label"
-            valueField="value"
-            placeholder="Select category"
-            value={category}
-            onChange={(item) => setCategory(item.value)}
-            fontFamily="PlusJakartaSans-Regular"
-            containerStyle={styles.dropdownContainer}
-          />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <SafeAreaView style={HS.container}>
+        <View style={HS.header2}>
+          <Text style={HS.headerTitle}>Sell</Text>
+          <TouchableOpacity onPress={handleCancel}>
+            <Text style={HS.cancelButton}>Cancel</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.pickerContainer}>
-          <Dropdown
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            data={conditionData}
-            labelField="label"
-            valueField="value"
-            placeholder="Select condition"
-            value={condition}
-            onChange={(item) => setCondition(item.value)}
-            fontFamily="PlusJakartaSans-Regular"
-            containerStyle={styles.dropdownContainer}
-          />
-        </View>
-
-        <TouchableOpacity style={styles.photoSection}>
-          <Text style={styles.photoText}>Add photos</Text>
-          <View style={styles.photoGrid}>
-            {images.map((photo, index) => (
-              <View key={index} style={styles.photoContainer}>
-                <Image source={{ uri: photo }} style={styles.photoPlaceholder} />
-                <TouchableOpacity onPress={() => handleRemoveImage(index)}>
-                  <Ionicons name="trash-outline" size={24} color="#666" />
-                </TouchableOpacity>
-              </View>
-            ))}
-            {images.length < 5 && (
-              <TouchableOpacity style={styles.photoPlaceholder} onPress={handleAddImages}>
-                <Ionicons name="add" size={24} color="#666" />
-              </TouchableOpacity>
-            )}
-          </View>
-        </TouchableOpacity>
-        <View style={styles.priceSection}>
-          <Text style={styles.priceText}>Add price</Text>
+        <View style={styles.contentArea}>
+          <Text style={styles.prompt}>What are you selling?</Text>
           <TextInput
-            style={styles.priceInput}
-            value={price}
-            onChangeText={setPrice}
-            placeholder="Price"
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Title"
             placeholderTextColor="#666"
-            keyboardType="numeric"
           />
-          <Text style={styles.currency}>EUR</Text>
+          <TextInput
+            style={styles.input}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Description"
+            placeholderTextColor="#666"
+            multiline
+          />
+          <View style={styles.pickerContainer}>
+            <Dropdown
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              data={categoryData}
+              labelField="label"
+              valueField="value"
+              placeholder="Select category"
+              value={category}
+              onChange={(item) => setCategory(item.value)}
+              fontFamily="PlusJakartaSans-Regular"
+              containerStyle={styles.dropdownContainer}
+            />
+          </View>
+
+          <View style={styles.pickerContainer}>
+            <Dropdown
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              data={conditionData}
+              labelField="label"
+              valueField="value"
+              placeholder="Select condition"
+              value={condition}
+              onChange={(item) => setCondition(item.value)}
+              fontFamily="PlusJakartaSans-Regular"
+              containerStyle={styles.dropdownContainer}
+            />
+          </View>
+
+          <TouchableOpacity style={styles.photoSection}>
+            <Text style={styles.photoText}>Add photos ({images.length}/5)</Text>
+            <Text style={styles.photoSubText}>Add at least one photo (Max 5 photos)</Text>
+            <View style={styles.photoGrid}>
+              {images.map((photo, index) => (
+                <View key={index} style={styles.photoContainer}>
+                  <Image source={{ uri: photo }} style={styles.photoPlaceholder} />
+                  <TouchableOpacity style={styles.removeImageButton} onPress={() => handleRemoveImage(index)}>
+                    <Ionicons name="trash" size={16} color="white" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {images.length < 5 && (
+                <TouchableOpacity style={styles.photoPlaceholder} onPress={handleAddImages}>
+                  <Ionicons name="add" size={24} color="#666" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </TouchableOpacity>
+          <View style={styles.priceSection}>
+            <Text style={styles.priceText}>Add price</Text>
+            <TextInput
+              style={styles.priceInput}
+              value={price}
+              onChangeText={setPrice}
+              placeholder="Price"
+              placeholderTextColor="#666"
+              keyboardType="numeric"
+            />
+            <Text style={styles.currency}>EUR</Text>
+          </View>
+          <TouchableOpacity
+            style={[HS.publishButton, (!isFormValid || isPublishing) && HS.disabledButton]}
+            onPress={handlePublish}
+            disabled={!isFormValid}
+          >
+            <Text style={[HS.publishButtonText, (!isFormValid || isPublishing) && styles.disabledButtonText]}>
+              {isPublishing ? 'Publishing...' : 'Save Publish'}
+            </Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={[HS.publishButton, (!isFormValid) && HS.disabledButton]}
-          onPress={handlePublish}
-          disabled={!isFormValid}
-        >
-          <Text style={[HS.publishButtonText, !isFormValid && styles.disabledButtonText]}>Publish</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
-  cancelButton: {
-    fontSize: 14,
-    color: 'red',
-    fontFamily: 'PlusJakartaSans-Bold',
-  },
   contentArea: {
     flex: 1,
     padding: 10,
@@ -237,9 +254,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#eee',
     borderRadius: 10,
-    padding: 14,
+    padding: 16,
     marginBottom: 10,
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'PlusJakartaSans-Regular',
   },
   pickerContainer: {
@@ -255,12 +272,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   placeholderStyle: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#666',
     fontFamily: 'PlusJakartaSans-Regular',
   },
   selectedTextStyle: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#000',
     fontFamily: 'PlusJakartaSans-Regular',
   },
@@ -274,8 +291,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   photoText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#666',
+    marginBottom: 10,
+    fontFamily: 'PlusJakartaSans-Bold',
+  },
+  photoSubText: {
+    fontSize: 14,
+    color: '#999',
     marginBottom: 10,
     fontFamily: 'PlusJakartaSans-Regular',
   },
@@ -291,6 +314,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
+    borderStyle: 'dashed',
   },
   photoContainer: {
     position: 'relative',
@@ -305,10 +331,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   priceText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#666',
     marginRight: 10,
-    fontFamily: 'PlusJakartaSans-Regular',
+    fontFamily: 'PlusJakartaSans-Bold',
   },
   priceInput: {
     flex: 1,
@@ -316,7 +342,7 @@ const styles = StyleSheet.create({
     borderColor: '#eee',
     borderRadius: 10,
     padding: 10,
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'PlusJakartaSans-Regular',
   },
   currency: {
@@ -327,5 +353,29 @@ const styles = StyleSheet.create({
   },
   disabledButtonText: {
     color: '#D3D3D3',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  overlayText: {
+    marginTop: 12,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Darker background for contrast
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
