@@ -28,17 +28,19 @@ export default function Home() {
     'PlusJakartaSans-Bold': require('@/assets/fonts/PlusJakartaSans-Bold.ttf'),
   });
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const { products, isLoading, error, fetchProducts } = useProductStore(); // get products from the store
   const router = useRouter();
 
   useEffect(() => {
     console.log(user, 'user from useUser');
     if (user?.id) {
-      fetchProducts(user.id);
-      fetchUser(user.id);
+      fetchUser(user.id).then((u)=> {
+        fetchProducts(user.id, u.country._id);
+      })
     }
 
-  }, [fetchProducts, fetchUser]);
+  }, [fetchProducts, fetchUser, user?.id]);
 
   if (!isLoaded) {
     return (
@@ -56,10 +58,17 @@ export default function Home() {
   console.log('User is signed in:', USER);
 
   //filter the products to only show the products that are not created by the user
-  const filteredProducts =
-    selectedCategory === 'all'
-      ? products
-      : products.filter((product) => product.category.toLowerCase() === selectedCategory.toLowerCase());
+  // const filteredProducts = 
+  //   selectedCategory === 'all'
+  //     ? products
+  //     : products.filter((product) => product.category.toLowerCase() === selectedCategory.toLowerCase());
+
+  const filteredProducts = products.filter((products) => {
+    const matchesCategory = selectedCategory === 'all' || products.category.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesSearch = searchQuery === '' || products.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+
+  })
 
   return (
     <SafeAreaView style={styles.container}>
@@ -79,6 +88,8 @@ export default function Home() {
           style={styles.searchInput}
           placeholder='Search "Economy Book"'
           placeholderTextColor="gray"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
         <Ionicons name="filter" size={20} color="gray" />
       </View>

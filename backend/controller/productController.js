@@ -7,10 +7,13 @@ const User = require('../models/user.js');
 
 //productes que no pertanyen al usuari registrat
 const getProducts = async (req, res) => {
-  console.log('Fetch products')
+  console.log('Fetch products');
     try {
-      //fetch the user object
       const { clerkUserId } = req.params;
+      const { countryId } = req.query;
+
+      console.log(req.query);
+    
       // Find the user by clerkUserId
       const user = await User.findOne({ clerkUserId });
       if (!user) {
@@ -19,11 +22,19 @@ const getProducts = async (req, res) => {
 
       console.log('Found user with MongoDB ID:', user._id);
 
-      const products = await Product.find({ seller: {$ne: user._id}})
+      const query = { seller: {$ne: user._id} };
+
+      if(countryId) {
+        query['location.country'] = countryId;
+      }
+
+      console.log(query);
+
+      const products = await Product.find(query)
       .populate('location.city', 'name')
       .populate('location.country', 'name');
       
-      // console.log('Fetched all products:', products);
+      console.log('Fetched all products:', products);
       res.status(200).json(products);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching products', error });

@@ -10,8 +10,8 @@ interface ProductState {
   isLoading: boolean;
   refreshing: boolean;
   error: string | null;
-  fetchProducts: (clerkUserId: string) => Promise<void>;
-  refreshProducts: (clerkUserId: string) => Promise<void>;
+  fetchProducts: (clerkUserId: string, countryId: string) => Promise<void>;
+  refreshProducts: (clerkUserId: string, countryId: string) => Promise<void>;
   fetchProductById: (id: string) => Promise<void>;
   fetchProductsByClerkId: (clerkUserId: string) => Promise<void>;
   createProduct: (productData: ProductData) => Promise<any>;
@@ -29,20 +29,20 @@ export const useProductStore = create<ProductState>((set, get) => ({
   error: null,
 
 
-  fetchProducts: async (clerkUserId: string) => {
+  fetchProducts: async (clerkUserId: string, countryId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.get(`/products/${clerkUserId}`);
+      const response = await api.get(`/products/${clerkUserId}`, {params: {countryId}});
       set({ products: response.data, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }
   },
 
-  refreshProducts: async (clerkUserId: string) => {
+  refreshProducts: async (clerkUserId: string, countryId: string) => {
     set({ refreshing: true, error: null });
     try {
-      await get().fetchProducts(clerkUserId);
+      await get().fetchProducts(clerkUserId, countryId);
     } catch (err) {
       // fetchProducts already sets error
     } finally {

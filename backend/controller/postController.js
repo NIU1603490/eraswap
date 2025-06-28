@@ -68,9 +68,31 @@ const deletePost = async (req, res) => {
 
 const getAllPosts = async (req, res) => {
     try {
+        console.log('GET ALL POST');
+        console.log(req.query);
+        const  countryId  = req.query.countryId;
+        console.log('countryId', countryId);
         const posts = await Post.find()
-            .populate('author', 'firstName lastName username profilePicture')
+            .populate('author', 'firstName lastName username profilePicture location.country._id')
             .sort({ createdAt: -1 }); // sort by creation date, newest first
+        
+
+        //priority 1 
+        //priority 0 --> with the same country
+        if(countryId) {
+            posts.sort((a,b) => {
+                const aPriority = a.author.country._id === countryId ? 0 : 1;
+                const bPriority = b.author.country._id === countryId ? 0 : 1;
+
+                if(aPriority !== bPriority) {
+                    // res = -1 --> put firt a
+                    // res = +1 --> put b first
+                    return aPriority - bPriority
+                }
+                return new Date(b.createdAt) - new Date(a.createdAt);
+
+            })
+        }
         res.status(200).json({ success: true, posts });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error fetching posts', error: error.message });

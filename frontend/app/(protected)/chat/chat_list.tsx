@@ -149,7 +149,7 @@ export default function ChatListScreen() {
           style={[styles.exploreButton, { backgroundColor: theme.colors.primary }]}
           onPress={() => router.push('/home')}
         >
-          <Text style={styles.exploreButtonText}>Explorar productos</Text>
+          <Text style={styles.exploreButtonText}>Explore products</Text>
         </TouchableOpacity>
       </View>
     );
@@ -201,18 +201,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  // emptyTitle: {
-  //   fontSize: 20,
-  //   fontWeight: 'bold',
-  //   marginTop: 20,
-  //   marginBottom: 10,
-  // },
-  // emptySubtitle: {
-  //   fontSize: 16,
-  //   textAlign: 'center',
-  //   marginBottom: 30,
-  // },
   exploreButton: {
+    marginTop: 10,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -220,7 +210,7 @@ const styles = StyleSheet.create({
   exploreButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'PlusJakartaSans-Bold',
   },
   conversationItem: {
     flexDirection: 'row',

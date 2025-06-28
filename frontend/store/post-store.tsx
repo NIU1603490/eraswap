@@ -8,14 +8,13 @@ interface PostState {
     isLoading: boolean;
     error: string | null;
 
-    fetchPosts: () => Promise<void>;
+    fetchPosts: (countryId: string) => Promise<void>;
     fetchPostsByClerkId: (clerkUserId: string) => Promise<void>;
     addPost: (postData: any) => Promise<void>;
     updatePost: (id: string, updates: Partial<Post>) => Promise<void>;
     deletePost: (id: string) => Promise<void>;
     likePost: (postId: string, userId: string) => Promise<void>;
     unlikePost: (postId: string, userId: string) => Promise<void>;
-    
 }
 
 
@@ -25,10 +24,10 @@ export const usePostStore = create<PostState>((set,get)=> ({
     isLoading: false,
     error: null,
 
-    fetchPosts: async() => {
+    fetchPosts: async(countryId: string) => {
         set({ isLoading: true, error: null});
         try {
-            const response = await api.get('/posts');
+            const response = await api.get('/posts', {params: {countryId}});
             set({ posts: response.data.posts || response.data, isLoading: false });
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
@@ -42,7 +41,7 @@ export const usePostStore = create<PostState>((set,get)=> ({
             const response = await api.get(`/posts/user/${clerkUserId}`);
             set(state => ({ 
                 userPosts: {
-                    ...state.userPosts, // actualizar i mantenri els anteriors
+                    ...state.userPosts, // actualizar i mantenir els anteriors
                     [clerkUserId]: response.data.posts || [] }, //afegir nous posts a aquest usuari
                      isLoading: false }));
         } catch (error: any) {

@@ -16,13 +16,16 @@ import { useRouter } from 'expo-router';
 import { useUser }  from '@clerk/clerk-expo';
 import { useFonts } from 'expo-font';
 import { usePostStore } from '@/store/post-store';
+import { useUserStore } from '@/store/user-store';
 import  PostCard from '@/components/postCard';
 import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
+
 
 
 export default function Feed() {
   const { user } = useUser();
   const router = useRouter();
+  const { user : current, fetchUser} = useUserStore();
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { posts, isLoading, error: postError, fetchPosts, likePost, unlikePost } = usePostStore();
@@ -33,18 +36,21 @@ export default function Feed() {
   });
 
   useEffect(() => {
-    fetchPosts().then(() => {
-      console.log(posts);
-    }).catch((err) => {
-      console.error('Error fetching posts:', err);
-    });
-  }, [fetchPosts]);
+    if(user?.id){
+      fetchUser(user.id).then((u)=> {
+        console.log('country', u.country._id);
+        fetchPosts(u.country._id)
+      }).catch((err) => console.error('Error fetching user;', err))
+    }
+  }, [fetchUser, fetchPosts, user?.id]);
 
   const onRefresh = useCallback( async () => { 
     setRefreshing(true);
-    await fetchPosts();
+    if(current?.country._id) {
+      await fetchPosts(current?.country._id);
+    }
     setRefreshing(false);
-  }, [fetchPosts]);
+  }, [fetchPosts, current]);
 
   const handleLikePress = useCallback(
     async (postId: string, liked: boolean) => {
@@ -76,18 +82,18 @@ export default function Feed() {
     );
   }
 
-  if (error) {
-    return (
-      <SafeAreaView style={HS.container}>
-        <View style={HS.errorContainer}>
-          <Text style={HS.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => fetchPosts()}>
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // if (error) {
+  //   return (
+  //     <SafeAreaView style={HS.container}>
+  //       <View style={HS.errorContainer}>
+  //         <Text style={HS.errorText}>{error}</Text>
+  //         <TouchableOpacity style={styles.retryButton} onPress={() => fetchPosts(current?.country._id)}>
+  //           <Text style={styles.retryButtonText}>Retry</Text>
+  //         </TouchableOpacity>
+  //       </View>
+  //     </SafeAreaView>
+  //   );
+  // }
 
   return (
     <SafeAreaView style={HS.container}>
