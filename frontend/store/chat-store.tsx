@@ -23,6 +23,7 @@ interface ChatState {
     productId?: string;
     initialMessage?: string;
   }) => Promise<Conversation>;
+  deleteConversation: (conversationId: string) => Promise<void>;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -86,6 +87,20 @@ export const useChatStore = create<ChatState>((set) => ({
       throw err;
     } finally {
       set({ isLoading: false });
+    }
+  },
+  deleteConversation: async (conversationId : string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.delete(`/conversations/${conversationId}`);
+      set((state)=> ({
+        conversations: state.conversations.filter((c)=> c._id !== conversationId),
+      }))
+    } catch (err: any) {
+      console.error('Error deleting conversation:', err);
+      set({error: err.message});
+    } finally {
+      set({ isLoading: false});
     }
   },
 }));

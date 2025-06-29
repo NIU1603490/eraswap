@@ -31,6 +31,7 @@ const mockResponse = () => {
 
 const mockQuery = (result, error) => ({
     populate: jest.fn().mockReturnThis(),
+    sort: jest.fn().mockReturnThis(),
     then: jest.fn((res, rej) => (error ? rej(error) : res(result)))
 });
 

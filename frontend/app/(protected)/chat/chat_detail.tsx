@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,13 +23,11 @@ import { useUserStore } from '@/store/user-store';
 import { useChatStore } from '@/store/chat-store';
 
 
-
-
 export default function ChatScreen() {
   const router = useRouter();
   const { user } = useUser();
   const { user: currentUser, fetchUser } = useUserStore();
-  const { fetchMessages, sendMessage, messages } = useChatStore();
+  const { fetchMessages, sendMessage, deleteConversation, messages } = useChatStore();
   const params = useLocalSearchParams<{ id: string; chatId: string; sellerId?: string; sellerUsername?: string; profilePhoto?: string;}>();
   const otherUserName = params.sellerUsername;
   const otherUserProfilePicture = params.profilePhoto;
@@ -36,8 +35,9 @@ export default function ChatScreen() {
   const chatId = params.chatId;
 
   console.log('CHAT DETAIL');
+  console.log(otherUserId);
 
-  // const [messages, setMessages] = useState<Message[]>([]);
+
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -73,15 +73,12 @@ export default function ChatScreen() {
   const onSend = async () => {
     if (inputText.trim().length === 0) return;
     try {
-      console.log(user?.id);
-      console.log(params.chatId);
-      console.log(params.sellerId);
-      if (!user?.id || !params.chatId || !params.sellerId) return;
+      if (!currentUser?._id || !params.chatId || !params.sellerId) return;
 
       console.log('send');
       await sendMessage({
         conversationId: params.chatId,
-        senderId: user.id,
+        senderId: currentUser._id,
         receiverId: params.sellerId,
         content: inputText.trim(),
       });
@@ -105,7 +102,27 @@ export default function ChatScreen() {
       console.error('Failed to send message', err);
     }
   };
+
+  const showOptions = () => {
+    Alert.alert('Delete chat', 'Do you want to delete the chat?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Delete chat',
+        style: 'destructive',
+        onPress: async () => {
+          if (!chatId) return;
+          try {
+            await deleteConversation(chatId);
+            router.push('/chat/chat_list');
+          } catch (err) {
+            console.error('Failed to delete conversation', err);
+          }
+        },
+      },
+    ]);
+  };
   
+
 
   if (loading) {
     return <View style={styles.centered}><ActivityIndicator size="large" color="#3D5AF1" /></View>;
@@ -136,8 +153,8 @@ export default function ChatScreen() {
                 <Image source={{ uri: params.profilePhoto }} style={styles.headerAvatar} />
               )}
               <Text style={styles.headerTitle} numberOfLines={1}>{otherUserName}</Text>
-              <TouchableOpacity style={styles.headerOptionsButton} onPress={() => console.log('Chat options')}>
-                <Ionicons name="ellipsis-vertical" size={22} color="#1F2937" />
+              <TouchableOpacity style={styles.headerOptionsButton} onPress={showOptions}>
+                <Ionicons name="trash" size={22} color="#1F2937" />
               </TouchableOpacity>
             </View>
         

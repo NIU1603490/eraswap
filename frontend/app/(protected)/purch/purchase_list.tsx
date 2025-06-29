@@ -13,10 +13,8 @@ import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 export default function PurchaseList() {
   const { user } = useUser();
   const router = useRouter();
-  const {
-    fetchTransactionsByBuyerId, updateTransactionStatus,
+  const { fetchTransactionsByBuyerId, updateTransactionStatus,
     isLoading, error, transactions } = useTransactionStore();
-
   const [fontsLoaded] = useFonts({
     'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
     'PlusJakartaSans-Bold': require('@/assets/fonts/PlusJakartaSans-Bold.ttf'),

@@ -34,19 +34,19 @@ const getConversationsByUser = async (req, res) => {
 
 //create a conversation between two users. senderId and receiverId are clerkIDs
 const createConversation = async (req, res) => {
-    //object id of sender and receiver
-    console.log('Create Conversation');
-    try {
-        console.log(req.body);
-        const { senderId, receiverId, productId, initialMessage } = req.body;
-        const sender = await User.findOne({ _id: senderId });
-        console.log(sender);
-        const receiver = await User.findOne({ _id: receiverId });
-        if (!sender || !receiver) {
-          return res.status(404).json({ success: false, message: 'User not found' });
-        }
+  //object id of sender and receiver
+  console.log('Create Conversation');
+  try {
+    console.log(req.body);
+    const { senderId, receiverId, productId, initialMessage } = req.body;
+    const sender = await User.findOne({ _id: senderId });
+    console.log(sender);
+    const receiver = await User.findOne({ _id: receiverId });
+    if (!sender || !receiver) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
-        let product = null;
+    let product = null;
     if (productId) {
       if (!isValidObjectId(productId)) {
         return res.status(400).json({ success: false, message: 'Invalid product id' });
@@ -64,23 +64,23 @@ const createConversation = async (req, res) => {
 
     if (!conversation) {
       console.log('No exist conversation');
-        conversation = await Conversation.create({
-          participants: [sender._id, receiver._id],
-          product: product ? product._id : undefined,
-        });
-      }
-  
-      if (initialMessage) {
-        const message = await Message.create({
-          conversation: conversation._id,
-          sender: sender._id,
-          receiver: receiver._id,
-          content: initialMessage,
-          product: product ? product._id : undefined,
-        });
-        conversation.lastMessage = message._id;
-        conversation.updatedAt = Date.now();
-        await conversation.save();
+      conversation = await Conversation.create({
+        participants: [sender._id, receiver._id],
+        product: product ? product._id : undefined,
+      });
+    }
+
+    if (initialMessage) {
+      const message = await Message.create({
+        conversation: conversation._id,
+        sender: sender._id,
+        receiver: receiver._id,
+        content: initialMessage,
+        product: product ? product._id : undefined,
+      });
+      conversation.lastMessage = message._id;
+      conversation.updatedAt = Date.now();
+      await conversation.save();
     }
     //return a conversation even if doesn't exist 
     console.log(conversation);
@@ -91,5 +91,27 @@ const createConversation = async (req, res) => {
   }
 };
 
+const deleteConversation = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
 
-module.exports = {getConversationsByUser, createConversation, };
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ success: false, message: 'Conversation not found' });
+    }
+
+    await Message.deleteMany({ conversation: conversationId });
+    await conversation.deleteOne();
+    res.status(200).json({ success: true, message: 'Conversation deleted' });
+
+  } catch (error) {
+    console.error('Error deleting conversation:', error);
+    res.status(500).json({success: false, message: 'Error deleting conversation', error: error.message});
+
+  }
+
+
+}
+
+
+module.exports = { getConversationsByUser, createConversation, deleteConversation };

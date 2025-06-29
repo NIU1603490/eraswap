@@ -25,11 +25,13 @@ const getMessagesByConversation = async (req, res) => {
   }
 };
 
-// Send a message
+
 const sendMessage = async (req, res) => {
   try {
     const { conversationId, senderId, receiverId, content, productId } = req.body;
     console.log(req.body);
+    console.log(senderId);
+    console.log(receiverId);
     if (!conversationId || !senderId || !receiverId || !content) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
@@ -39,8 +41,8 @@ const sendMessage = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Conversation not found' });
     }
 
-    const sender = await User.findOne({ clerkUserId: senderId });
-    const receiver = await User.findOne({ clerkUserId: receiverId });
+    const sender = await User.findOne({ _id: senderId });
+    const receiver = await User.findOne({ _id: receiverId });
     if (!sender || !receiver) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }

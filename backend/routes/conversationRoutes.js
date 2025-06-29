@@ -5,7 +5,8 @@ const conversationController = require('../controller/conversationController');
 // Get all conversations for a user (clerkUserId)
 router.get('/user/:userId', conversationController.getConversationsByUser);
 
-// Create a new conversation
 router.post('/create', conversationController.createConversation);
+
+router.delete('/:conversationId', conversationController.deleteConversation);
 
 module.exports = router;

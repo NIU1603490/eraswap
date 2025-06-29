@@ -50,7 +50,7 @@ export default function ChatListScreen() {
             params: {
               chatId: item._id,
               id: item.product?._id,
-              sellerId: other.clerkUserId,
+              sellerId: other._id,
               sellerUsername: other.username,
               profilePhoto: other.profilePicture,
             },
@@ -64,9 +64,6 @@ export default function ChatListScreen() {
             <Text style={[styles.participantName]} numberOfLines={2}>
               {other.firstName} {other.lastName}
             </Text>
-
-
-            
 
             {item.lastMessage && (
               <Text style={[styles.timeText]}> {formatTime(item.lastMessage.createdAt)} </Text>

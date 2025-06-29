@@ -110,6 +110,7 @@ const getTransactionsByBuyerId = async (req, res) => {
       .populate('buyer', 'username',)
       .populate('seller', 'username',)
       .populate('product', 'title images',)
+      .sort({createdAt: -1});
 
       console.log('transactions:', transactions);
       res.status(200).json({ success: true, data: transactions });
@@ -132,6 +133,7 @@ const getTransactionsBySellerId = async (req, res) => {
       .populate('buyer', 'username',)
       .populate('seller', 'username',)
       .populate('product', 'title images',)
+      .sort({createdAt: -1});
 
       console.log('transactions:', transactions);
       res.status(200).json({ success: true, data: transactions });
