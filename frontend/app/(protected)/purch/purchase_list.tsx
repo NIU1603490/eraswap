@@ -73,7 +73,6 @@ export default function PurchaseList() {
   };
 
 
-
   const renderPurchaseItem = useCallback(({ item }: { item: Transaction }) => {
     const createdAt = new Date(item.createdAt).toLocaleDateString('en-US', {
       day: 'numeric', month: 'short', year: 'numeric',
@@ -93,7 +92,6 @@ export default function PurchaseList() {
       <View style={styles.purchaseItem}>
         <Image
           source={{ uri: item.product.images?.[0] ?? undefined }}
-          // defaultSource={require('@/assets/placeholder.png')}
           style={styles.image}
         />
         <View style={styles.info}>
@@ -111,7 +109,7 @@ export default function PurchaseList() {
           </View>
           <Text style={[styles.statusText, statusConfig.style]}>{statusConfig.text}</Text>
 
-          {/* If confirmed, allow buyer to complete */}
+          {/* if confirmed, allow buyer to complete */}
           {item.status === 'Confirmed' && (
             <TouchableOpacity style={styles.completeBtn} onPress={() => handleComplete(item._id)}>
               <Text style={styles.completeBtnText} > Received </Text>
@@ -142,7 +140,7 @@ export default function PurchaseList() {
   return (
     <SafeAreaView style={HS.container}>
       <View style={HS.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.push('/home')}>
           <Ionicons name="arrow-back" size={24} color="#1F2937" />
         </TouchableOpacity>
         <Text style={HS.headerTitle}>Purchases</Text>

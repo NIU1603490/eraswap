@@ -73,16 +73,16 @@ const getAllPosts = async (req, res) => {
         const  countryId  = req.query.countryId;
         console.log('countryId', countryId);
         const posts = await Post.find()
-            .populate('author', 'firstName lastName username profilePicture location.country._id')
+            .populate('author', 'firstName lastName username profilePicture country')
             .sort({ createdAt: -1 }); // sort by creation date, newest first
         
-
+        console.log(posts);
         //priority 1 
         //priority 0 --> with the same country
         if(countryId) {
             posts.sort((a,b) => {
-                const aPriority = a.author.country._id === countryId ? 0 : 1;
-                const bPriority = b.author.country._id === countryId ? 0 : 1;
+                const aPriority = a.author.country._id.toString() === countryId ? 0 : 1;
+                const bPriority = b.author.country._id.toString() === countryId ? 0 : 1;
 
                 if(aPriority !== bPriority) {
                     // res = -1 --> put firt a

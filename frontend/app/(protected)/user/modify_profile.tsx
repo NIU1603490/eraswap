@@ -8,8 +8,6 @@ import { Dropdown } from 'react-native-element-dropdown';
 import { useLocationStore } from '@/store/location-store';
 import { useUserStore } from '@/store/user-store';
 import { uploadImage } from '@/services/imageService';
-import { set } from 'react-hook-form';
-
 
 export default function ModifyProfile() {
   const { user } = useClerk();
@@ -17,7 +15,6 @@ export default function ModifyProfile() {
   const { countries, cities, universities,
     fetchCountries, fetchCities, fetchUniversities,
   } = useLocationStore();
-
 
   const [fontsLoaded] = useFonts({
     'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
@@ -119,10 +116,14 @@ export default function ModifyProfile() {
       let finalImageUrl = image;
       
       if (image !== user.imageUrl) {
-        console.log('image',image);
-        const uploadResult = await uploadImage(image);
-        console.log('Upload result:', uploadResult);
-        finalImageUrl = uploadResult;
+        setIsUploading(true);
+        try {
+          const uploadResult = await uploadImage(image);
+          finalImageUrl = uploadResult;
+        } finally{
+          setIsUploading(false);
+        }
+      
       }
 
       // Update Clerk user profile
@@ -162,8 +163,12 @@ export default function ModifyProfile() {
       router.push('/profile');
 
     } catch (error) {
-      console.error('Error updating profile:', error);
-    };
+      // console.error('Error updating profile:', error);
+      Alert.alert('Error', 'Failed to update profile');
+    } finally {
+      setIsSaving(false);
+      setIsUploading(false);
+    }
   }
 
     if (!fontsLoaded) {
@@ -378,7 +383,7 @@ export default function ModifyProfile() {
       fontFamily: 'PlusJakartaSans-Bold',
     },
     disabledButton: {
-      color: '#A0A0A0',
+      color: 'black',
     },
     disabledButtonContainer: {
       backgroundColor: '#A0A0A0',
@@ -394,7 +399,12 @@ export default function ModifyProfile() {
       borderRadius: 100,
       marginBottom: 10,
     },
-    imageOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', borderRadius: 65 },
+    imageOverlay: { 
+      ...StyleSheet.absoluteFillObject, 
+      backgroundColor: 'rgba(0,0,0,0.4)', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      borderRadius: 100 },
     inputContainer: {
       marginHorizontal: 20,
       marginVertical: 10,

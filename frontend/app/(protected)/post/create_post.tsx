@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, ActivityIndicator, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, ActivityIndicator, Platform, TouchableWithoutFeedback, Keyboard, Alert } from 'react-native';
 import React, { useState } from 'react';
 import { useClerk } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
@@ -30,7 +30,7 @@ export default function create_post() {
 
   const handlePublish = async () => {
     if (!postText.trim()) return;
-
+    setIsPublishing(true);
     let imageUrl = image ? image : '';
     if (image) {
       try {
@@ -48,10 +48,12 @@ export default function create_post() {
         userId: user?.id,
       });
       router.back();
-      alert('Post created successfully!');
+      Alert.alert('Success','Post created successfully!');
 
     } catch (error) {
       console.error('Error creating post:', error);
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -75,12 +77,6 @@ export default function create_post() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView style={HS.container}>
-        {isPublishing && (
-          <View style={styles.overlay}>
-            <ActivityIndicator size="large" color="#fff" />
-            <Text style={styles.overlayText}>Publishing...</Text>
-          </View>
-        )}
         <View style={HS.header2}>
           <Text style={HS.headerTitle}> Post </Text>
           <TouchableOpacity onPress={handleCancel}>
@@ -123,14 +119,12 @@ export default function create_post() {
 
           <TouchableOpacity
             onPress={handlePublish}
-            disabled={!postText || isLoading}
+            disabled={!postText || isPublishing}
             style={[HS.publishButton, (!postText || isLoading || isPublishing) && HS.disabledButton]}
           >
-            {isLoading ? (
-              <ActivityIndicator size="small" color="#007aff" />
-            ) : (
-              <Text style={HS.publishButtonText}>Publish</Text>
-            )}
+            <Text style={HS.publishButtonText}>
+              {isPublishing ? 'Publishing' : 'Publish'} </Text>
+
           </TouchableOpacity>
 
         </KeyboardAvoidingView>
@@ -157,6 +151,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   postText: {
+    fontSize: 16,
     fontFamily: 'PlusJakartaSans-Regular',
     minHeight: 200,
     flex: 1, // Allows text input to expand
@@ -207,7 +202,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   addImageText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#007AFF',
     marginLeft: 10,
     fontFamily: 'PlusJakartaSans-Regular',

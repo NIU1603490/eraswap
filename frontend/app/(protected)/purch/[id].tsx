@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,14 +14,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { UserData, TransactionData, Product } from '@/services/types';
+import { User, TransactionData, Product } from '@/services/types';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useFonts } from 'expo-font';
 
 import { useUser } from '@clerk/clerk-expo';
 import { useProductStore } from '@/store/product-store';
 import { useTransactionStore } from '@/store/transaction-store';
-import { fetchObjectUser } from '@/services/authService';
+import { useUserStore } from '@/store/user-store';
+import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 export default function PurchaseProcessScreen() {
   const { id, sellerId } = useLocalSearchParams();
@@ -29,9 +30,10 @@ export default function PurchaseProcessScreen() {
   const { user } = useUser();
   const { fetchProductById, selectedProduct, isLoading: productLoading, error: productError } = useProductStore();
   const { createTransaction, isLoading: transactionLoading } = useTransactionStore();
+  const { fetchObjectUser, selectedUser } = useUserStore();
 
   const [product, setProduct] = useState<Product | null>(null);
-  const [seller, setSeller] = useState<UserData | null>(null);
+  const [seller, setSeller] = useState<User | null>(null);
   const [deliveryMethod, setDeliveryMethod] = useState<'inPerson' | 'delivery'>('inPerson');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online'>('cash');
   const [messageToSeller, setMessageToSeller] = useState('');
@@ -40,16 +42,29 @@ export default function PurchaseProcessScreen() {
   const [meetingLocation, setMeetingLocation] = useState('');
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [isTimePickerVisible, setTimePickerVisibility] = useState(false);
+  const [isFormValid, setFormValid] = useState(false);
 
   const [fontsLoaded] = useFonts({
     'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
     'PlusJakartaSans-Bold': require('@/assets/fonts/PlusJakartaSans-Bold.ttf'),
   });
 
+  useEffect(() => {
+    console.log(isFormValid);
+    if (deliveryMethod === 'inPerson' && (meetingDate || meetingTime || meetingLocation)) {
+      setFormValid(true);
+    }
+  }, [meetingDate, meetingTime, meetingLocation, deliveryMethod]);
+
   // DateTime Picker handlers
   const showDatePicker = () => setDatePickerVisibility(true);
   const hideDatePicker = () => setDatePickerVisibility(false);
   const handleDateConfirm = (date: Date) => {
+    const now = new Date();
+    if (date < now) {
+      Alert.alert('Date Error', 'Chose a correct date');
+      return;
+    }
     setMeetingDate(date);
     hideDatePicker();
   };
@@ -70,7 +85,6 @@ export default function PurchaseProcessScreen() {
       Alert.alert('Missing Information', 'Please select a date, time, and location for the meeting.');
       return;
     }
-
     const transactionData: TransactionData = {
       buyer: user.id,
       product: id as string,
@@ -118,10 +132,10 @@ export default function PurchaseProcessScreen() {
         if (selectedProduct) {
           console.log('Selected Product:', selectedProduct);
           setProduct(selectedProduct);
-          const userResponse = await fetchObjectUser(selectedProduct.seller);
-          if (userResponse) {
-            console.log('Fetched Seller:', userResponse);
-            setSeller(userResponse);
+          await fetchObjectUser(selectedProduct.seller);
+          if (selectedUser) {
+            console.log('Fetched Seller:', selectedUser);
+            setSeller(selectedUser);
           } else {
             throw new Error('Seller not found');
           }
@@ -149,155 +163,143 @@ export default function PurchaseProcessScreen() {
     );
   }
 
-  // if (hasError) {
-  //   return (
-  //     <SafeAreaView style={styles.container}>
-  //       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-  //         <Text style={styles.errorText}>Failed to load product or seller. Please try again later.</Text>
-  //         <TouchableOpacity style={styles.retryButton} onPress={() => fetchProductById(id as string)}>
-  //           <Text style={styles.retryButtonText}>Retry</Text>
-  //         </TouchableOpacity>
-  //       </View>
-  //     </SafeAreaView>
-  //   );
-  // }
-
-  console.log('Rendering PurchaseProcessScreen:', { product, seller });
-
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
+    <SafeAreaView style={HS.container}>
+      <View style={HS.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={HS.cancelButton}> Cancel</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Finalize Purchase</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: 30 }} />
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-      <View style={styles.productSummaryContainer}>
-            {product?.images && product.images.length > 0 ? (
-              <Image source={{ uri: product.images[0] }} style={styles.productImage} />
-            ) : (
-              <Text style={styles.placeholderText}>No image available</Text>
-            )}
-            <View style={styles.productInfo}>
-              <Text style={styles.productTitle}>{product?.title || 'No title available'}</Text>
-              <Text style={styles.productPrice}>
-                {product?.price ? `${product.price.amount} ${product.price.currency}` : 'Price not available'}
-              </Text>
-              <Text style={styles.statusText}>
-                Status: {product?.status || 'available'}
-              </Text>
-              <View style={styles.sellerRow}>
-                {seller?.profilePicture ? (
-                  <Image source={{ uri: seller.profilePicture }} style={styles.sellerImageSmall} />
-                ) : (
-                  <Text style={styles.placeholderText}>No profile pic</Text>
-                )}
-                <Text style={styles.sellerNameSmall}>{seller?.username || 'Unknown seller'}</Text>
-              </View>
-            </View>
-            </View>
-          <Text style={styles.sectionTitle}>Delivery Method</Text>
-          <View style={styles.optionGroup}>
-            <TouchableOpacity
-              style={[styles.optionButton, deliveryMethod === 'inPerson' && styles.optionButtonSelected]}
-              onPress={() => setDeliveryMethod('inPerson')}
-            >
-              <Ionicons name="location-outline" size={20} color={deliveryMethod === 'inPerson' ? '#fff' : '#3D5AF1'} style={styles.optionIcon} />
-              <Text style={[styles.optionText, deliveryMethod === 'inPerson' && styles.optionTextSelected]}>Meet in person</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.optionButton, deliveryMethod === 'delivery' && styles.optionButtonSelected]}
-              onPress={() => setDeliveryMethod('delivery')}
-            >
-              <Ionicons name="location-outline" size={20} color={deliveryMethod === 'delivery' ? '#fff' : '#3D5AF1'} style={styles.optionIcon} />
-              <Text style={[styles.optionText, deliveryMethod === 'delivery' && styles.optionTextSelected]}>Delivery</Text>
-            </TouchableOpacity>
-          </View>
-
-          {deliveryMethod === 'inPerson' && (
-            <>
-              <Text style={styles.subSectionTitle}>Arrange Meeting</Text>
-              <TouchableOpacity onPress={showDatePicker} style={styles.inputField}>
-                <Text style={styles.inputText}>{meetingDate.toDateString()}</Text>
-              </TouchableOpacity>
-              <DateTimePickerModal
-                isVisible={isDatePickerVisible}
-                mode="date"
-                onConfirm={handleDateConfirm}
-                onCancel={hideDatePicker}
-              />
-              <TouchableOpacity onPress={showTimePicker} style={styles.inputField}>
-                <Text style={styles.inputText}>{meetingTime.toLocaleTimeString()}</Text>
-              </TouchableOpacity>
-              <DateTimePickerModal
-                isVisible={isTimePickerVisible}
-                mode="time"
-                onConfirm={handleTimeConfirm}
-                onCancel={hideTimePicker}
-              />
-              <TextInput
-                style={styles.inputField}
-                placeholder="Suggest Meeting Location (e.g., Campus Library)"
-                value={meetingLocation}
-                onChangeText={setMeetingLocation}
-              />
-            </>
+        <View style={styles.productSummaryContainer}>
+          {product?.images && product.images.length > 0 ? (
+            <Image source={{ uri: product.images[0] }} style={styles.productImage} />
+          ) : (
+            <Text style={styles.placeholderText}>No image available</Text>
           )}
-        
-
-        
-          <Text style={styles.sectionTitle}>Payment Method</Text>
-          <View style={styles.optionGroup}>
-            <TouchableOpacity
-              style={[styles.optionButton, paymentMethod === 'cash' && styles.optionButtonSelected]}
-              onPress={() => setPaymentMethod('cash')}
-            >
-              <Ionicons name="cash-outline" size={20} color={paymentMethod === 'cash' ? '#fff' : '#3D5AF1'} style={styles.optionIcon} />
-              <Text style={[styles.optionText, paymentMethod === 'cash' && styles.optionTextSelected]}>Cash on pickup</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.optionButton, paymentMethod === 'online' && styles.optionButtonSelected]}
-              onPress={() => setPaymentMethod('online')}
-            >
-              <Ionicons name="cash-outline" size={20} color={paymentMethod === 'online' ? '#fff' : '#3D5AF1'} style={styles.optionIcon} />
-              <Text style={[styles.optionText, paymentMethod === 'online' && styles.optionTextSelected]}>Online Payment</Text>
-            </TouchableOpacity>
-          </View>
-        
-
-        
-          <Text style={styles.sectionTitle}>Message to Seller (Optional)</Text>
-          <TextInput
-            style={styles.textArea}
-            placeholder="Write a message to the seller..."
-            value={messageToSeller}
-            onChangeText={setMessageToSeller}
-            multiline
-            numberOfLines={3}
-          />
-          <View style={styles.summarySection}>
-            <Text style={styles.summaryTitle}>Summary</Text>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Product Price:</Text>
-              <Text style={styles.summaryValue}>
-                {product?.price ? `${product.price.amount} ${product.price.currency}` : 'Price not available'}
-              </Text>
-            </View>
-            <View style={[styles.summaryRow, styles.totalRow]}>
-              <Text style={[styles.summaryLabel, styles.totalLabel]}>Total to Pay: </Text>
-              <Text style={[styles.summaryValue, styles.totalValue]}>
-                {product?.price ? `${product.price.amount} ${product.price.currency}` : 'Price not available'}
-              </Text>
+          <View style={styles.productInfo}>
+            <Text style={styles.productTitle}>{product?.title || 'No title available'}</Text>
+            <Text style={styles.productPrice}>
+              {product?.price ? `${product.price.amount} ${product.price.currency}` : 'Price not available'}
+            </Text>
+            <Text style={styles.statusText}>
+              Status: {product?.status || 'available'}
+            </Text>
+            <View style={styles.sellerRow}>
+              {seller?.profilePicture ? (
+                <Image source={{ uri: seller.profilePicture }} style={styles.sellerImageSmall} />
+              ) : (
+                <Text style={styles.placeholderText}>No profile pic</Text>
+              )}
+              <Text style={styles.sellerNameSmall}>{seller?.username || 'Unknown seller'}</Text>
             </View>
           </View>
+        </View>
+        <Text style={styles.sectionTitle}>Delivery Method</Text>
+        <View style={styles.optionGroup}>
+          <TouchableOpacity
+            style={[styles.optionButton, deliveryMethod === 'inPerson' && styles.optionButtonSelected]}
+            onPress={() => setDeliveryMethod('inPerson')}
+          >
+            <Ionicons name="location-outline" size={20} color={deliveryMethod === 'inPerson' ? '#fff' : '#3D5AF1'} style={styles.optionIcon} />
+            <Text style={[styles.optionText, deliveryMethod === 'inPerson' && styles.optionTextSelected]}>Meet in person</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            disabled
+            style={[styles.optionButton, styles.optionButtonDisabled]}
+            onPress={() => setDeliveryMethod('delivery')}
+          >
+            <Ionicons name="location-outline" size={20} color={deliveryMethod === 'delivery' ? '#fff' : '#3D5AF1'} style={styles.optionIcon} />
+            <Text style={[styles.optionText, deliveryMethod === 'delivery' && styles.optionTextSelected]}>Delivery</Text>
+          </TouchableOpacity>
+        </View>
+
+        {deliveryMethod === 'inPerson' && (
+          <>
+            <Text style={styles.subSectionTitle}>Arrange Meeting</Text>
+            <TouchableOpacity onPress={showDatePicker} style={styles.inputField}>
+              <Text style={styles.inputText}>{meetingDate.toDateString()}</Text>
+            </TouchableOpacity>
+            <DateTimePickerModal
+              isVisible={isDatePickerVisible}
+              mode="date"
+              onConfirm={handleDateConfirm}
+              onCancel={hideDatePicker}
+            />
+            <TouchableOpacity onPress={showTimePicker} style={styles.inputField}>
+              <Text style={styles.inputText}>{meetingTime.toLocaleTimeString()}</Text>
+            </TouchableOpacity>
+            <DateTimePickerModal
+              isVisible={isTimePickerVisible}
+              mode="time"
+              onConfirm={handleTimeConfirm}
+              onCancel={hideTimePicker}
+            />
+            <TextInput
+              style={styles.inputField}
+              placeholder="Suggest Meeting Location (e.g., Campus Library)"
+              value={meetingLocation}
+              onChangeText={setMeetingLocation}
+            />
+          </>
+        )}
+
+
+
+        <Text style={styles.sectionTitle}>Payment Method</Text>
+        <View style={styles.optionGroup}>
+          <TouchableOpacity
+            style={[styles.optionButton, paymentMethod === 'cash' && styles.optionButtonSelected]}
+            onPress={() => setPaymentMethod('cash')}
+          >
+            <Ionicons name="cash-outline" size={20} color={paymentMethod === 'cash' ? '#fff' : '#3D5AF1'} style={styles.optionIcon} />
+            <Text style={[styles.optionText, paymentMethod === 'cash' && styles.optionTextSelected]}>Cash on pickup</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            disabled
+            style={[styles.optionButton, styles.optionButtonDisabled]}
+            onPress={() => setPaymentMethod('online')}
+          >
+            <Ionicons name="cash-outline" size={20} color={paymentMethod === 'online' ? '#fff' : '#3D5AF1'} style={styles.optionIcon} />
+            <Text style={[styles.optionText, paymentMethod === 'online' && styles.optionTextSelected]}>Online Payment</Text>
+          </TouchableOpacity>
+        </View>
+
+
+
+        <Text style={styles.sectionTitle}>Message to Seller (Optional)</Text>
+        <TextInput
+          style={styles.textArea}
+          placeholder="Write a message to the seller..."
+          value={messageToSeller}
+          onChangeText={setMessageToSeller}
+          multiline
+          numberOfLines={3}
+        />
+        <View style={styles.summarySection}>
+          <Text style={styles.summaryTitle}>Summary</Text>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Product Price:</Text>
+            <Text style={styles.summaryValue}>
+              {product?.price ? `${product.price.amount} ${product.price.currency}` : 'Price not available'}
+            </Text>
+          </View>
+          <View style={[styles.summaryRow, styles.totalRow]}>
+            <Text style={[styles.summaryLabel, styles.totalLabel]}>Total to Pay: </Text>
+            <Text style={[styles.summaryValue, styles.totalValue]}>
+              {product?.price ? `${product.price.amount} ${product.price.currency}` : 'Price not available'}
+            </Text>
+          </View>
+        </View>
         <Text style={styles.policyText}>
           By confirming, you agree to Eraswap's Terms & Conditions and Privacy Policy.
         </Text>
 
-        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmPurchase}>
+        <TouchableOpacity style={[styles.confirmButton]}
+          onPress={handleConfirmPurchase}>
           <Text style={styles.confirmButtonText}>Confirm Purchase</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -414,6 +416,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#3D5AF1',
     borderColor: '#3D5AF1',
   },
+  optionButtonDisabled: {
+    opacity: 0.5,
+  },
   optionIcon: {
     marginRight: 8,
   },
@@ -515,6 +520,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 20,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   confirmButtonText: {
     color: '#FFFFFF',

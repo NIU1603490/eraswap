@@ -11,8 +11,6 @@ const getProducts = async (req, res) => {
     try {
       const { clerkUserId } = req.params;
       const { countryId } = req.query;
-
-      console.log(req.query);
     
       // Find the user by clerkUserId
       const user = await User.findOne({ clerkUserId });

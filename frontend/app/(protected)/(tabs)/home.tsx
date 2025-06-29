@@ -21,7 +21,7 @@ import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 export default function Home() {
   const { user } = useUser();
-  const { fetchUser, user: USER } = useUserStore();
+  const { fetchUser, user: current } = useUserStore();
   const { isSignedIn, isLoaded } = useAuth();
   const [fontsLoaded] = useFonts({
     'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
@@ -40,9 +40,9 @@ export default function Home() {
       })
     }
 
-  }, [fetchProducts, fetchUser, user?.id]);
+  }, [fetchProducts, fetchUser]);
 
-  if (!isLoaded) {
+  if (!isLoaded || isLoading || !fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -55,13 +55,7 @@ export default function Home() {
     return <Redirect href="/(auth)/signup" />;
   }
 
-  console.log('User is signed in:', USER);
-
-  //filter the products to only show the products that are not created by the user
-  // const filteredProducts = 
-  //   selectedCategory === 'all'
-  //     ? products
-  //     : products.filter((product) => product.category.toLowerCase() === selectedCategory.toLowerCase());
+  console.log('User is signed in:', current);
 
   const filteredProducts = products.filter((products) => {
     const matchesCategory = selectedCategory === 'all' || products.category.toLowerCase() === selectedCategory.toLowerCase();
@@ -75,7 +69,7 @@ export default function Home() {
       <View style={styles.header}>
         <View style={styles.locationContainer}>
           <Ionicons name="location-outline" size={22} color="black" />
-          <Text style={styles.locationText}>{USER?.city.name.toUpperCase()}, {USER?.country.name.toUpperCase()}</Text>
+          <Text style={styles.locationText}>{current?.city.name.toUpperCase()}, {current?.country.name.toUpperCase()}</Text>
           <Ionicons name="chevron-down" size={16} color="black" />
         </View>
       </View>

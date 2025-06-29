@@ -14,7 +14,7 @@ import { useFollowStore } from '@/store/follow-store';
 import { usePostStore } from '@/store/post-store';
 import { User } from '@/services/types';
 import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
-import { set } from 'react-hook-form';
+
 
 export default function OtherProfile() {
   const { id } = useLocalSearchParams<{ id: string }>(); //Object id
@@ -42,6 +42,7 @@ export default function OtherProfile() {
       setLoading(true);
       if (!id)
         return;
+      console.log(id);
       try {
         if (user?.id) {
           await fetchUser(user.id);
@@ -173,12 +174,11 @@ export default function OtherProfile() {
           ))}
         </View>
 
+        <View style={styles.postContainer}>
         {selectedTab === 'Products' && (
           <FlatList
             data={userProducts}
-            renderItem={({ item }) => (
-              <ProductCard item={item} onPress={() => router.push(`/prod/${item._id}`)} />
-            )}
+            renderItem={({ item }) => ( <ProductCard item={item} onPress={() => router.push(`/prod/${item._id}`)} />)}
             keyExtractor={(item) => item._id}
             numColumns={2}
             columnWrapperStyle={styles.productRow}
@@ -189,6 +189,7 @@ export default function OtherProfile() {
             )}
           />
         )}
+        </View>
 
         {/* Render Post */}
         {selectedTab === 'Post' && (
@@ -340,6 +341,7 @@ const styles = StyleSheet.create({
   },
   postContainer: {
     marginTop: 10,
+    backgroundColor: '#f9f9f9',
   },
   placeholderContent: {
     flex: 1,

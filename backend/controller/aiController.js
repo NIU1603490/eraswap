@@ -4,31 +4,31 @@ require('dotenv').config();
 
 const API_KEY = process.env.GEMINI_API_KEY;
 if (!API_KEY) {
-    console.error("Error: GEMINI_API_KEY no está definida en el archivo .env");
-    throw new Error('GEMINI_API_KEY no está definida. Por favor, configura tu archivo .env');
+    console.error("Error: GEMINI_API_KEY is not defined .env");
+    throw new Error('GEMINI_API_KEY is not defined. Please, configure the file .env');
 }
+
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 const sendChat = async (req, res) => {
     console.log('API call received');
     try {
         const { messages } = req.body; 
-        console.log("Recibido del frontend:", messages);
+        console.log("Recived from frontend:", messages);
 
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             console.log('NO MESSAGES provided or empty array');
-            return res.status(400).json({ error: "Se requiere un array de 'messages' en el cuerpo de la solicitud." });
+            return res.status(400).json({ error: "An array of messages is required" });
         }
 
         let systemInstruction = null;
-        let chatMessagesForHistory = []; // Aquí guardaremos solo los mensajes de 'user' y 'assistant'
+        let chatMessagesForHistory = []; // messages of 'user' and 'assistant'
 
-        // Iterar sobre los mensajes para separar la instrucción del sistema
         messages.forEach(m => {
             if (m.role === 'system') {
                 systemInstruction = { parts: [{ text: m.content }] };
             } else {
-                // Mapea 'assistant' a 'model' y 'user' directamente
+                // 'assistant' --> 'model'
                 chatMessagesForHistory.push({
                     role: m.role === 'assistant' ? 'model' : m.role,
                     parts: [{ text: m.content }],
@@ -36,29 +36,27 @@ const sendChat = async (req, res) => {
             }
         });
 
-        // Asegúrate de que el último mensaje sea siempre del usuario para sendMessage
+        // take the last message of the user
         const userPrompt = chatMessagesForHistory[chatMessagesForHistory.length - 1].parts[0].text;
         
-        // El historial para 'startChat' debe contener todos los mensajes *excepto* el último del usuario
-        // y *sin* el mensaje del sistema
+        // to'startChat' we need all the messages except the last message of the user
         const historyWithoutLastUserPrompt = chatMessagesForHistory.slice(0, -1);
 
-        // Obtener el modelo de Gemini
+        // specify the gemini model
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-flash",
-            // Pasa la instrucción del sistema aquí
             systemInstruction: systemInstruction 
         }); 
 
-        // Iniciar una sesión de chat con el historial (que ahora no incluye el mensaje del sistema)
+        //start conversation without the system message
         const chat = model.startChat({
-            history: historyWithoutLastUserPrompt, // Esto ahora empieza con 'user' o está vacío
+            history: historyWithoutLastUserPrompt,
             generationConfig: {
                 maxOutputTokens: 500, 
             },
         });
 
-        // Enviar solo el mensaje actual del usuario
+        //send only the last message of the user
         const result = await chat.sendMessage(userPrompt);
         const response = await result.response;
         const reply = response.text();
@@ -72,14 +70,14 @@ const sendChat = async (req, res) => {
         if (error.response && error.response.data && error.response.data.error) {
             errorMessage = error.response.data.error.message;
             if (error.response.data.error.status === 'RESOURCE_EXHAUSTED') {
-                errorMessage = 'Has excedido tu cuota de uso para Gemini. Por favor, intenta de nuevo más tarde o revisa tus límites.';
+                errorMessage = 'You have exceeded your usage quota for Gemini. Please try again later or check your limits.';
             } else if (error.response.data.error.code === 403) {
-                 errorMessage = 'Error de autenticación: Tu clave de API puede ser inválida o no tener los permisos correctos.';
+                 errorMessage = 'Authentication error: Your API key may be invalid or lack the necessary permissions.';
             } else if (error.response.data.error.message.includes("First content should be with role 'user', got system")) {
-                errorMessage = "Error de configuración interna del chat. El mensaje del sistema no puede ser el primer mensaje en el historial del chat.";
+                errorMessage = "Internal chat configuration error. The system message cannot be the first message in the chat history.";
             }
         } else if (error.message && error.message.includes("First content should be with role 'user', got system")) {
-            errorMessage = "Error de configuración interna del chat. El mensaje del sistema no puede ser el primer mensaje en el historial del chat.";
+            errorMessage = "Internal chat configuration error. The system message cannot be the first message in the chat history.";
         }
 
         res.status(500).json({ success: false, message: errorMessage });

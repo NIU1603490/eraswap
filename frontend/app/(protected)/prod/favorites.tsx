@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 import ProductCard from "@/components/productCard";
+import { Background } from "@react-navigation/elements";
 
 
 export default function FavoritesScreen() {
@@ -33,7 +34,6 @@ export default function FavoritesScreen() {
       if (!user?.id) return null;
       try {
         setLoading(true);
-        // Fetch favorite products for the current user
         const favorites = await fetchFavoriteProducts(user.id);
         console.log("Favorite products fetched:", favoriteProducts);
 
@@ -55,13 +55,13 @@ export default function FavoritesScreen() {
   if (!fontsLoaded || loading) {
     return (
       <SafeAreaView style={HS.loadingContainer}>
-        <Text style={HS.loadingText}>Loading favorites...</Text>
+        <Text style={HS.loadingText}> Loading favorites...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={HS.container}>
+    <SafeAreaView style={[HS.container , styles.favContainer]}>
       <View style={HS.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#1F2937" />
@@ -70,6 +70,7 @@ export default function FavoritesScreen() {
         <View style={{ width: 24 }} />
       </View>
 
+      <View>
       <FlatList
         data={favoriteProducts}
         renderItem={({ item }) => (
@@ -90,13 +91,17 @@ export default function FavoritesScreen() {
             </Text>
           </View>
         }
-
+       
       />
+       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  favContainer:  {
+    backgroundColor: '#f9f9f9',
+  },
   productList: {
     padding: 16,
   },

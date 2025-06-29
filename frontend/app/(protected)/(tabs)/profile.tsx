@@ -46,8 +46,8 @@ export default function Profile() {
         setUserData(userResponse);
         await fetchProductsByClerkId(user.id);
         await fetchPostsByClerkId(user.id);
-        await fetchFollowers(user.id);
-        await fetchFollowing(user.id);
+        await fetchFollowers(userResponse._id);
+        await fetchFollowing(userResponse._id);
 
       } catch (err: any) {
         setError(err.message || 'Error al cargar los datos del usuario');

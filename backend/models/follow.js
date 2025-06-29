@@ -16,8 +16,9 @@ const followSchema = new Schema({
 }, { timestamps: true }); // timestamps will add createdAt and updatedAt fields
 
 // indexe to avoid duplicate follows
-// e.g. user A follows user B, user B follows user A
+
 // this will create a unique index on the combination of follower and following
+// e.g. user A follows user B, user B follows user A
 followSchema.index({ follower: 1, following: 1 }, { unique: true });
 
 //index to improve query performance

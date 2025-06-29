@@ -130,7 +130,7 @@ const unfollowUser = async (req, res) => {
 
 const getFollowers = async (req, res) => {
     console.log('GET FOLLOWERS');
-    try {
+    try { 
         const userId = req.params.id; //object id
         console.log(userId);
         const user = await User.findOne({ _id: userId});

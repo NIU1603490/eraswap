@@ -1,7 +1,7 @@
 const cloudinary = require('../config/cloudinaryConfig');
 
 const uploadImage = async (req, res) => {
-    console.log('UPLOAD IMAGE')
+  console.log('UPLOAD IMAGE');
   try {
     console.log('file', req.file)
     if (!req.file) {

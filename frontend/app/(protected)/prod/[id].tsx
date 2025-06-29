@@ -202,7 +202,7 @@ export default function ProductDetail() {
           {/* Seller Info */}
           <View style={styles.sellerInfoContainer}>
             <Image
-              source={{ uri: user?.imageUrl || 'https://via.placeholder.com/40x40.png?text=Seller' }}
+              source={{ uri: selectedUser.profilePicture || 'https://via.placeholder.com/40x40.png?text=Seller' }}
               style={styles.sellerImage}
             />
             <View style={styles.sellerTextContainer}>

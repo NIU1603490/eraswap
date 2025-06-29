@@ -24,7 +24,6 @@ export default function ModifyPost() {
   useEffect(() => {
     const post = posts.find(p => p._id === id);
     if (!post) {
-      console.error('Post not found for id:', id);
       return;
     }
     if (post) {
@@ -36,7 +35,7 @@ export default function ModifyPost() {
   const handleUpdate = async () => {
     if (!id) return;
     try {
-      await updatePost(id as string, {content, image});
+      await updatePost(id as string, { content, image });
       router.back();
     } catch (err) {
       console.error('Update post error:', err);
@@ -79,15 +78,15 @@ export default function ModifyPost() {
     setImage('');
   };
 
-  if (!fontsLoaded || isLoading) {  
+  if (!fontsLoaded || isLoading) {
     return (
       <SafeAreaView style={HS.loadingContainer}>
-        <Text>Loading...</Text>
+        <Text style={HS.loadingText}> Loading...</Text>
       </SafeAreaView>
     );
   }
 
-  if(error) {
+  if (error) {
     return (
       <SafeAreaView style={HS.container}>
         <Text style={HS.errorText}>Error: {error}</Text>
@@ -99,7 +98,7 @@ export default function ModifyPost() {
   return (
     <SafeAreaView style={HS.container}>
       <View style={HS.header2}>
-      <Text style={HS.headerTitle}> Edit Post </Text>
+        <Text style={HS.headerTitle}> Edit Post </Text>
         <TouchableOpacity onPress={() => router.back()} >
           <Text style={HS.cancelButton}> Cancel </Text>
         </TouchableOpacity>
@@ -129,51 +128,51 @@ export default function ModifyPost() {
         )}
       </View>
 
-        <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={handleUpdate} style={HS.publishButton}>
-                <Text style={HS.publishButtonText}>Save</Text>
-            </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity onPress={handleUpdate} style={HS.publishButton}>
+          <Text style={HS.publishButtonText}>Save</Text>
+        </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleDelete} style={styles.buttonDelete}>
-                <Ionicons name="trash" size={20} color="red" />
-            </TouchableOpacity>
-            
-        </View>
-      
+        <TouchableOpacity onPress={handleDelete} style={styles.buttonDelete}>
+          <Ionicons name="trash" size={20} color="red" />
+        </TouchableOpacity>
+
+      </View>
+
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-    buttonDelete: {
+  buttonDelete: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    margin: 16,
     fontSize: 14,
     borderRadius: 20,
     borderColor: 'red',
     borderWidth: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-    },
-    buttonContainer: {
+  },
+  buttonContainer: {
     padding: 15,
-    gap: 15,
-    },
-    containerPost: {
-    margin: 20, 
+  },
+  containerPost: {
+    margin: 20,
     gap: 15
-    },
-    postText: { 
-        fontFamily: 'PlusJakartaSans-Regular',
-        minHeight: 200,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 12,
-        padding: 12,
-        textAlignVertical: 'top',
-        backgroundColor: '#FAFAFA',
-     },
-    imageContainer: { position: 'relative', width: '100%', height: 250, borderRadius: 12, overflow: 'hidden' },
-    image: { width: '100%', height: '100%', resizeMode: 'cover' },
-    removeImageButton: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 16, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-    addImageButton: { flexDirection: 'row', alignItems: 'center', padding: 10 },
-    addImageText: { fontSize: 14, color: '#007AFF', marginLeft: 10, fontFamily: 'PlusJakartaSans-Regular' },
+  },
+  postText: {
+    fontFamily: 'PlusJakartaSans-Regular',
+    minHeight: 200,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
+    padding: 12,
+    textAlignVertical: 'top',
+    backgroundColor: '#FAFAFA',
+  },
+  imageContainer: { position: 'relative', width: '100%', height: 250, borderRadius: 12, overflow: 'hidden' },
+  image: { width: '100%', height: '100%', resizeMode: 'cover' },
+  removeImageButton: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 16, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  addImageButton: { flexDirection: 'row', alignItems: 'center', padding: 10 },
+  addImageText: { fontSize: 14, color: '#007AFF', marginLeft: 10, fontFamily: 'PlusJakartaSans-Regular' },
 });

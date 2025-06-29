@@ -1,3 +1,4 @@
+//REVISADO
 const locationController = require('../controller/locationController');
 const Country = require('../models/country');
 const City = require('../models/city');

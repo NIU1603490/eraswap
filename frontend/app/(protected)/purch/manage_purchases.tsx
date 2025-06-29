@@ -29,8 +29,6 @@ export default function ManagePurchasesScreen() {
     'PlusJakartaSans-Bold': require('@/assets/fonts/PlusJakartaSans-Bold.ttf'),
   });
   
-  // Filter transactions based on selected tab
-  // useMemo is used to optimize performance by memoizing the filtered transactions
   const filteredTransactions = useMemo (
     () => transactions.filter(transaction => transaction.status === selectedTab),
     [transactions, selectedTab]
@@ -191,7 +189,7 @@ const changeStatus = useCallback(
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={  
           <View style={HS.emptyContainer}>
-            <Text style={HS.emptyText}>No {selectedTab.toLowerCase()} purchase requests</Text>
+            <Text style={HS.emptyTitle}>No {selectedTab.toLowerCase()} purchase requests</Text>
           </View>
           }
         />
