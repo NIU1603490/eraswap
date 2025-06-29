@@ -17,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useUser} from '@clerk/clerk-expo';
 import { Message } from '@/services/types';
-// import * as chatService from '@/services/conversationService';
 import socket from '@/services/socket';
 import { useUserStore } from '@/store/user-store';
 import { useChatStore } from '@/store/chat-store';
@@ -50,17 +49,29 @@ export default function ChatScreen() {
   }, [user?.id]);
 
   useEffect(() => {
+    if (!chatId) return;
+    socket.emit('joinRoom', chatId);
+    const handleNewMessage = (message: Message) => {
+      useChatStore.setState((state) => ({ messages: [message, ...state.messages] }));
+    };
+    socket.on('newMessage', handleNewMessage);
+    return () => {
+      socket.off('newMessage', handleNewMessage);
+      socket.emit('leaveRoom', chatId);
+    };
+  }, [chatId]);
+
+  useEffect(() => {
     const loadMessages = async () => {
       if (!chatId) return;
       setLoading(true);
       try {
         await fetchMessages(chatId as string);
-        const formatted = messages.map((m) => ({
-          ...m,
-          createdAt: new Date(m.createdAt),
-          updatedAt: new Date(m.updatedAt),
-        }));
-        // setMessages(formatted.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()));
+        // const formatted = messages.map((m) => ({
+        //   ...m,
+        //   createdAt: new Date(m.createdAt),
+        //   updatedAt: new Date(m.updatedAt),
+        // }));
       } catch (err) {
         console.error('Failed to load messages', err);
       } finally {
@@ -84,14 +95,6 @@ export default function ChatScreen() {
       });
   
       setInputText('');
-      // Reload messages after sending
-      await fetchMessages(chatId);
-      const formatted = messages.map((m) => ({
-        ...m,
-        createdAt: new Date(m.createdAt),
-        updatedAt: new Date(m.updatedAt),
-      }));
-      // setMessages(formatted.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()));
       
       // Scroll to bottom
       setTimeout(() => {
@@ -130,6 +133,8 @@ export default function ChatScreen() {
 
   const renderMessageItem = ({ item }: { item: Message }) => {
     const isCurrentUser = item.sender._id === currentUser?._id;
+    console.log(item.sender._id);
+    console.log(currentUser?._id);
     return (
       <View style={[styles.messageRow, isCurrentUser ? styles.messageRowCurrentUser : styles.messageRowOtherUser]}>
         {!isCurrentUser && otherUserProfilePicture && (

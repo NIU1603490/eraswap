@@ -12,9 +12,9 @@ import { useUserStore } from '@/store/user-store';
 import { useProductStore } from '@/store/product-store';
 import { useFollowStore } from '@/store/follow-store';
 import { usePostStore } from '@/store/post-store';
+import { useChatStore } from '@/store/chat-store';
 import { User } from '@/services/types';
 import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
-
 
 export default function OtherProfile() {
   const { id } = useLocalSearchParams<{ id: string }>(); //Object id
@@ -25,6 +25,7 @@ export default function OtherProfile() {
   const { fetchProductsByClerkId, userProducts } = useProductStore();
   const { fetchPostsByClerkId, userPosts } = usePostStore();
   const { followers, following, isLoading, fetchFollowers, fetchFollowing, followUser, unfollowUser } = useFollowStore();
+  const { findOrCreateConversation } = useChatStore();
 
   const [profileData, setProfileData] = useState<User | null>(null);
   const [selectedTab, setSelectedTab] = useState('Products');
@@ -102,6 +103,28 @@ export default function OtherProfile() {
     }
   };
 
+  const handleMessage = async () => {
+    if (!current || !profileData) return;
+    try {
+      const conversation = await findOrCreateConversation({
+        senderId: current._id,
+        receiverId: profileData._id,
+      });
+
+      router.push({
+        pathname: '/chat/chat_detail',
+        params: {
+          chatId: conversation._id,
+          sellerId: profileData._id,
+          sellerUsername: profileData.username,
+          profilePhoto: profileData.profilePicture,
+        }
+      })
+    } catch (err) {
+      console.error('Failed to start conversation', err);
+    }
+  };
+
   if (!fontsLoaded || loading) {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -152,13 +175,15 @@ export default function OtherProfile() {
         </View>
 
         {/* Buttons */}
-
         <View style={styles.actionButtons}>
           <TouchableOpacity style={[styles.actionButton, isFollowing && styles.unfollowButton]}
             onPress={handleFollowToggle}>
             <Text style={[styles.actionButtonText, , isFollowing && styles.unfollowButtonText]}>
               {isFollowing ? 'Unfollow' : 'Follow'}
             </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.unfollowButton]} onPress={handleMessage}>
+            <Text style={styles.unfollowButtonText}> Message </Text>
           </TouchableOpacity>
         </View>
 
@@ -174,21 +199,22 @@ export default function OtherProfile() {
           ))}
         </View>
 
+        {/* Render Products */}
         <View style={styles.postContainer}>
-        {selectedTab === 'Products' && (
-          <FlatList
-            data={userProducts}
-            renderItem={({ item }) => ( <ProductCard item={item} onPress={() => router.push(`/prod/${item._id}`)} />)}
-            keyExtractor={(item) => item._id}
-            numColumns={2}
-            columnWrapperStyle={styles.productRow}
-            ListEmptyComponent={() => (
-              <View style={styles.placeholderContent}>
-                <Text style={styles.placeholderText}>No products available</Text>
-              </View>
-            )}
-          />
-        )}
+          {selectedTab === 'Products' && (
+            <FlatList
+              data={userProducts}
+              renderItem={({ item }) => (<ProductCard item={item} onPress={() => router.push(`/prod/${item._id}`)} />)}
+              keyExtractor={(item) => item._id}
+              numColumns={2}
+              columnWrapperStyle={styles.productRow}
+              ListEmptyComponent={() => (
+                <View style={styles.placeholderContent}>
+                  <Text style={styles.placeholderText}>No products available</Text>
+                </View>
+              )}
+            />
+          )}
         </View>
 
         {/* Render Post */}
@@ -293,7 +319,7 @@ const styles = StyleSheet.create({
   unfollowButton: {
     borderWidth: 1,
     borderColor: '#000',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#fff',
     color: '#000',
   },
   actionButtonText: {
@@ -311,17 +337,17 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    // borderBottomWidth: 1,
-    // borderBottomColor: '#f0f0f0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
     marginHorizontal: 15,
     marginTop: 10,
   },
   tabButton: {
-    paddingVertical: 10,
+    paddingVertical: 8,
     alignItems: 'center',
   },
   tabText: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: 'PlusJakartaSans-Regular',
     color: 'gray',
   },
@@ -333,20 +359,22 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 2,
     backgroundColor: 'black',
-    marginTop: 5,
+    marginTop: 3,
   },
   productRow: {
     justifyContent: 'space-between',
     paddingHorizontal: 15,
+    paddingVertical: 10,
   },
   postContainer: {
-    marginTop: 10,
+    paddingTop: 5,
     backgroundColor: '#f9f9f9',
   },
   placeholderContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 30,
   },
   placeholderText: {
     fontSize: 16,

@@ -21,7 +21,7 @@ import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 export default function Home() {
   const { user } = useUser();
-  const { fetchUser, user: current } = useUserStore();
+  const { fetchUser, user: current, isLoading: userLoading } = useUserStore();
   const { isSignedIn, isLoaded } = useAuth();
   const [fontsLoaded] = useFonts({
     'PlusJakartaSans-Regular': require('@/assets/fonts/PlusJakartaSans-Regular.ttf'),
@@ -42,7 +42,7 @@ export default function Home() {
 
   }, [fetchProducts, fetchUser]);
 
-  if (!isLoaded || isLoading || !fontsLoaded) {
+  if (!isLoaded || isLoading || !fontsLoaded || userLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#0000ff" />

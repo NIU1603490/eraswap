@@ -71,8 +71,12 @@ const sendMessage = async (req, res) => {
     await conversation.save();
 
     if (global.io) {
-      const populatedMessage = await message.populate('sender', 'username profilePicture').populate('receiver', 'username profilePicture').populate('product', 'title images');
-      global.io.to(conversationId).emit('newMessage', populatedMessage);
+      await message.populate([
+        { path: 'sender', select: 'username profilePicture' },
+        { path: 'receiver', select: 'username profilePicture' },
+        { path: 'product', select: 'title images' },
+      ]);
+      global.io.to(conversationId).emit('newMessage', message);
     }
 
     res.status(201).json({ success: true, message });

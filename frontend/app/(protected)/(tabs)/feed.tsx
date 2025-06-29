@@ -25,7 +25,7 @@ import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 export default function Feed() {
   const { user } = useUser();
   const router = useRouter();
-  const { user : current, fetchUser} = useUserStore();
+  const { user : current, fetchUser, isLoading : userLoading} = useUserStore();
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { posts, isLoading, error: postError, fetchPosts, likePost, unlikePost } = usePostStore();
@@ -72,7 +72,7 @@ export default function Feed() {
     router.push('/post');
   }, [router]);
 
-  if (isLoading || !fontsLoaded) {
+  if (isLoading || !fontsLoaded || userLoading) {
     return (
       <SafeAreaView style={HS.container}>
         <View style={HS.loadingContainer}>

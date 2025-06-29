@@ -62,9 +62,7 @@ export const useChatStore = create<ChatState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await api.post('/messages', payload);
-      const msg = res.data.message;
-      set((state) => ({ messages: [msg, ...state.messages] }));
-      return msg;
+      return res.data.message;
     } catch (err: any) {
       console.error('Error sending message:', err);
       set({ error: err.message });

@@ -79,7 +79,6 @@ export default function Profile() {
             </View>
 
             <Image
-
               source={{ uri: user?.imageUrl }}
               style={styles.profileImage}
             />
@@ -136,7 +135,7 @@ export default function Profile() {
           style={styles.postContainer}
           data={userProducts}
           renderItem={({ item }) => <ProductCard item={item}
-          onPress={() => router.push(`/prod/${item._id}`)} />}
+            onPress={() => router.push(`/prod/${item._id}`)} />}
           keyExtractor={(item) => item._id}
           numColumns={2}
           columnWrapperStyle={styles.productRow}
@@ -151,7 +150,7 @@ export default function Profile() {
       {/* Render Post */}
       {selectedTab === 'Post' && (
         <FlatList
-        style={styles.postContainer}
+          style={styles.postContainer}
           data={userPosts[user?.id || '']}
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => router.push({ pathname: '/post/modify_post', params: { id: item._id } })}>
