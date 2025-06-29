@@ -383,7 +383,7 @@ export default function ModifyProfile() {
       fontFamily: 'PlusJakartaSans-Bold',
     },
     disabledButton: {
-      color: 'black',
+      color: 'white',
     },
     disabledButtonContainer: {
       backgroundColor: '#A0A0A0',

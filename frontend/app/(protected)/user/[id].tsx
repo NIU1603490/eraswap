@@ -183,7 +183,7 @@ export default function OtherProfile() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionButton, styles.unfollowButton]} onPress={handleMessage}>
-            <Text style={styles.unfollowButtonText}> Message </Text>
+            <Text style={styles.unfollowButtonText}> Send Message </Text>
           </TouchableOpacity>
         </View>
 
