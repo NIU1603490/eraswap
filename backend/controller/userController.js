@@ -6,14 +6,14 @@ const Product = require('../models/product');
 const { getAuth } = require('@clerk/express');
 const { isValidObjectId } = require('mongoose');
 
-//save user to database
+
 const createUser = async (req, res) => {
   console.log('Creating User');
-  // Extract user data from request body
+
   console.log('Request body:', req.body);
   const { clerkUserId, firstName, lastName, username, email, country, city, university } = req.body;
   try {
-    // Validate required fields
+
     if (!clerkUserId || !firstName || !lastName || !username || !email || !country || !city || !university) {
       return res.status(400).json({
         success: false,
@@ -21,7 +21,6 @@ const createUser = async (req, res) => {
       });
     }
 
-    // Check if country, city, and university exist
     if (!isValidObjectId(country) || !isValidObjectId(city) || !isValidObjectId(university)) {
       return res.status(400).json({
         success: false,
@@ -29,7 +28,6 @@ const createUser = async (req, res) => {
       });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ clerkUserId });
     if (existingUser) {
       return res.status(409).json({
@@ -37,7 +35,7 @@ const createUser = async (req, res) => {
         message: 'User already exists',
       });
     }
-    // Validate required fields
+
     const newUser = new User({
       clerkUserId,
       firstName,
@@ -50,7 +48,7 @@ const createUser = async (req, res) => {
       profilePicture: 'https://www.gravatar.com/avatar/?d=mp',
     });
 
-    // Save the user to the database
+
     await newUser.save();
     res.status(201).json({ success: true, message: 'User created successfully', data: newUser });
 
@@ -61,8 +59,6 @@ const createUser = async (req, res) => {
 }
 
 
-//get user by clerkUserId
-// router.get('/user/:clerkUserId', userController.getUser); // get a user by clerkUserId
 const getUserByClerkId = async (req, res) => {
   try {
     const { userId, sessionId } = getAuth(req);
@@ -205,12 +201,17 @@ const removeFavorite = async (req, res) => {
     if (!user.savedProducts.includes(productId)) {
       return res.status(400).json({ success: false, message: 'Product not in favorites' });
     }
-    
+
     // keep all the products except the one with the productId
     user.savedProducts = user.savedProducts.filter((id) => id.toString() !== productId);
     await user.save();
 
-    product.saves ? product.saves -= 1 : product.saves = 0;
+    if (product.saves > 0) {
+      product.saves -= 1;
+    } else {
+      product.saves = 0;
+    }
+    await product.save();
 
     res.status(200).json({
       success: true,

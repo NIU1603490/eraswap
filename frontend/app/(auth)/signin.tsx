@@ -44,7 +44,6 @@ export default function SignIn() {
         console.log('Sign-in failed:', signInAttempt.status);
         setError('Invalid email or password. Please try again.');
       }
-
       console.log('Sign-in attempt:', signInAttempt);
 
     } catch (error: any) {

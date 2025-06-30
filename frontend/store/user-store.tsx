@@ -75,7 +75,6 @@ export const useUserStore = create<UserState>((set, get) => ({
         throw new Error(response.data.message || 'Failed to fetch user');
       }
       set({
-        isLoading: false,
         user: {
           ...response.data.user,
           savedProducts: response.data.user?.savedProducts || [],
@@ -85,6 +84,8 @@ export const useUserStore = create<UserState>((set, get) => ({
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw new Error(error.message);
+    } finally {
+      set({ isLoading: false});
     }
   },
 
@@ -119,7 +120,7 @@ export const useUserStore = create<UserState>((set, get) => ({
             return {
               user: {
                 ...user,
-                savedProducts: [...(user.savedProducts || []), response.data.product],
+                savedProducts: [...(user.savedProducts || []), productId],
               },
               isLoading: false,
             };
@@ -137,7 +138,6 @@ export const useUserStore = create<UserState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // data should be sent in the body for DELETE requests
-      // This is a workaround since some APIs expect data in the body for DELETE requests
       const response = await api.delete('/users/favorites/remove', { data: { productId, clerkUserId } });
       if (response.data.success) {
         set((state) => {

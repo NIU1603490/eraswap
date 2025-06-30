@@ -69,11 +69,6 @@ export default function SignUp() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Watch form values for cascading dropdowns
-  // const country = watch('country');
-  // const city = watch('city');
-
-  // Load countries
   useEffect(() => {
     const loadCountries = async () => {
       try {
@@ -86,7 +81,7 @@ export default function SignUp() {
     loadCountries();
   }, []);
 
-  // Load cities
+
   useEffect(() => {
     const loadCities = async () => {
       if (!selectedCountryId) {
@@ -105,7 +100,7 @@ export default function SignUp() {
     loadCities();
   }, [selectedCountryId, setValue]);
 
-  // Load universities
+
   useEffect(() => {
     const loadUniversities = async () => {
       if (!selectedCityId) {
@@ -135,23 +130,20 @@ export default function SignUp() {
     }
     setIsLoading(true);
     try {
-      // Create user with Clerk
       const result = await signUp.create({
         emailAddress: data.email,
         password: data.password,
         username: data.username,
         firstName: data.firstName,
-        lastName: data.lastName, // Added lastName
+        lastName: data.lastName, 
       });
-      // console.log('Clerk signUp result:', JSON.stringify(result, null, 2));
-
-      // Ensure Clerk user ID exists
+   
       if (!result.createdUserId) {
         throw new Error('User ID is missing from Clerk response');
       }
 
       console.log('Clerk user created:', result.createdUserId);
-      // Save user to MongoDB
+
       const res = await saveUser({
         clerkUserId: result.createdUserId,
         firstName: data.firstName,

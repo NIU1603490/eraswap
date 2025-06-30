@@ -69,7 +69,7 @@ export default function Home() {
       <View style={styles.header}>
         <View style={styles.locationContainer}>
           <Ionicons name="location-outline" size={22} color="black" />
-          <Text style={styles.locationText}>{current?.city.name.toUpperCase()}, {current?.country.name.toUpperCase()}</Text>
+          <Text style={styles.locationText}>{(current?.city.name || 'City').toUpperCase()}, {(current?.country.name || 'Country').toUpperCase()}</Text>
           <Ionicons name="chevron-down" size={16} color="black" />
         </View>
       </View>

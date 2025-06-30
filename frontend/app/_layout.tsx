@@ -12,7 +12,7 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <AuthSync/>
             <Slot /> 
-          <StatusBar style='dark' />
+          <StatusBar />
         </SafeAreaProvider>
     </ClerkProvider>
     

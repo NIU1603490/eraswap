@@ -49,3 +49,6 @@ Thumbs.db
 
 # Exemple que no cal pujar
 frontend/app-example/
+
+#Uploaded images (cloudinary)
+backend/uploads
