@@ -539,7 +539,7 @@ export default function SignUp() {
                 <Text style={styles.buttonText}>Sign up</Text>
               </TouchableOpacity>
 
-              {/* Social Sign-up */}
+              {/* Social Sign-up
               <View style={styles.separatorContainer}>
                 <View style={styles.separator} />
                 <Text style={styles.separatorText}>or sign up with</Text>
@@ -558,7 +558,7 @@ export default function SignUp() {
                   </View>
                   <Text style={styles.googleButtonText}>Continue with Google</Text>
                 </TouchableOpacity>
-              </View>
+              </View> */}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

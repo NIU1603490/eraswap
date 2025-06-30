@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import {View,Text,TextInput,TouchableOpacity,SafeAreaView,StatusBar,
-  KeyboardAvoidingView,Platform,ScrollView,} from 'react-native';
+import {
+  View, Text, TextInput, TouchableOpacity, SafeAreaView, StatusBar,
+  KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
@@ -8,35 +10,48 @@ import { Link, useRouter } from 'expo-router';
 import { useAuth, useSignIn } from '@clerk/clerk-expo';
 import { styles } from '../../assets/constants/auth_styles';
 import { SignInFields } from '../../services/types';
+import { SharedHeaderStyles as HS } from '@/assets/styles/sharedStyles';
 
 export default function SignIn() {
   const router = useRouter();
   const { signIn, isLoaded, setActive } = useSignIn();
   const { isSignedIn } = useAuth();
 
+  if(isSignedIn) {
+    router.push('/home');
+  }
+
   const onSignIn = async (data: SignInFields) => {
-    if (!isLoaded ) return;
-    console.log('Sign-in data:');
+    if (!isLoaded) return;
+    if(!data.email || !data.password) {
+      setError('Email and password are required');
+      return;
+    }
+
+    
     try {
+      setIsLoading(true);
       const signInAttempt = await signIn.create({
         identifier: data.email,
         password: data.password,
-
       });
 
       if (signInAttempt.status === 'complete') {
         console.log('Sign-in successful!');
-        setActive({ session: signInAttempt.createdSessionId });
-        // Redirect to the main app screen after successful sign-in
+        await setActive({ session: signInAttempt.createdSessionId });
+        // router.push('/home');
       } else {
         console.log('Sign-in failed:', signInAttempt.status);
         setError('Invalid email or password. Please try again.');
       }
 
       console.log('Sign-in attempt:', signInAttempt);
-      
-    } catch (error) {
+
+    } catch (error: any) {
       console.error('Error during sign-in:', error);
+      setError(error.message || 'An unexpected error occurred during sign-in.');
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -46,6 +61,14 @@ export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  if(!isLoaded || isLoading) {
+    return (
+      <View style={HS.loadingContainer}>
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </View>
+    );
+  }
+
 
   return (
     <LinearGradient colors={['#1E88E5', '#93BFD9', '#FFD663']} style={styles.gradient}>
@@ -53,7 +76,6 @@ export default function SignIn() {
         <StatusBar barStyle="light-content" />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <ScrollView showsVerticalScrollIndicator={false}>
-      
 
             <View style={styles.formContainer}>
               <Text style={styles.title}>Log in</Text>
@@ -64,8 +86,6 @@ export default function SignIn() {
                   </Link>
                 </Text>
               </View>
-
-              {error && <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{error}</Text>}
 
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Email address*</Text>
@@ -92,6 +112,8 @@ export default function SignIn() {
                 />
               </View>
 
+              {error && <Text style={styles.errorText}>{error}</Text>}
+
               <TouchableOpacity
                 style={[styles.button, isLoading && { opacity: 0.6 }]}
                 onPress={() => onSignIn({ email, password })}
@@ -100,13 +122,13 @@ export default function SignIn() {
                 <Text style={styles.buttonText}>Log in</Text>
               </TouchableOpacity>
 
-              <View style={styles.separatorContainer}>
+              {/* <View style={styles.separatorContainer}>
                 <View style={styles.separator} />
                 <Text style={styles.separatorText}>or log in with</Text>
                 <View style={styles.separator} />
-              </View>
+              </View> */}
 
-              <View style={styles.socialButtonsContainer}>
+              {/* <View style={styles.socialButtonsContainer}>
                 <TouchableOpacity
                   style={styles.googleButton}
                   onPress={() => {
@@ -118,7 +140,7 @@ export default function SignIn() {
                   </View>
                   <Text style={styles.googleButtonText}>Continue with Google</Text>
                 </TouchableOpacity>
-              </View>
+              </View> */}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
