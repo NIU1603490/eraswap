@@ -172,7 +172,7 @@ export default function SignUp() {
     }
   };
 
-  // Form submission
+
   const onSubmit = (data: FormData) => {
     console.log('onSubmit called with data:', data);
 
@@ -190,7 +190,7 @@ export default function SignUp() {
     onSignUp(signupData);
   };
 
-  // Handle submit with error scrolling
+  // handle submit with error scrolling
   const handleFormSubmit = () => {
     const firstError = Object.keys(errors)[0];
     if (firstError) {
